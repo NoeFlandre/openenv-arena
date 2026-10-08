@@ -1,0 +1,40 @@
+[project]
+name = "openenv-log-triage"
+version = "0.1.0"
+description = "Log Triage: an OpenEnv environment that trains agents to search service logs"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = [
+    # OpenEnv at the arena's pinned revision (86a180ed). The wheel is built
+    # from that commit and vendored, so the image build needs no GitHub access.
+    "openenv==0.6.1.dev0",
+]
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "pytest>=8",
+    "ruff>=0.8",
+    "ty>=0.0.1a20",
+]
+
+[tool.uv]
+# This is an application, not a library. Do not build or publish it.
+package = false
+
+[tool.uv.sources]
+openenv = { path = "vendor/openenv-0.6.1.dev0-py3-none-any.whl" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

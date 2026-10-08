@@ -1,0 +1,19 @@
+site_name: Log Triage
+site_description: An OpenEnv environment that trains agents to find failures in service logs.
+repo_url: https://github.com/NoeFlandre/openenv-arena
+repo_name: NoeFlandre/openenv-arena
+docs_dir: docs
+strict: true
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Environment: environment.md
+  - Build and test: build-and-test.md
+  - Publish the image: publish.md
+  - Submit: submit.md

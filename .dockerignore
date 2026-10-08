@@ -1,0 +1,16 @@
+# Keep the build context small. Only the server code, the vendored wheel and the lock file go in.
+.git
+.github
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.ty_cache
+site
+docs
+tests
+dataset
+submission
+*.md
+!README.md
