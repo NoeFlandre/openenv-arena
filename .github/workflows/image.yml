@@ -4,6 +4,11 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to publish, for example v1"
+        required: true
+        default: "v1"
 
 permissions:
   contents: read
@@ -30,7 +35,7 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: ${{ env.IMAGE }}:${{ github.ref_name }}
+          tags: ${{ env.IMAGE }}:${{ inputs.tag || github.ref_name }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=Apache-2.0
