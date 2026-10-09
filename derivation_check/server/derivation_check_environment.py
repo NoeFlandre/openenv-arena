@@ -10,6 +10,7 @@ The agent searches the log with ``grep`` and ends the episode with ``answer``.
 Reward is 1.0 for the right value and 0.0 otherwise.
 """
 
+import re
 from uuid import uuid4
 
 from openenv.core.env_server.interfaces import Environment
@@ -20,6 +21,18 @@ from ..tasks import TASKS, build
 
 MAX_STEPS = 10
 MAX_MATCHES = 10
+
+NUMBER = re.compile(r"(?:step|cap)?\s*#?(\d+)\.?", re.IGNORECASE)
+
+
+def _same_answer(given: str, expected: str) -> bool:
+    """Accept a step or caption number in any spelling: 7, 07, step 07, cap 7 or 07."""
+    text = given.strip()
+    match = NUMBER.fullmatch(text)
+    if match:
+        return int(match.group(1)) == int(expected)
+    return text.lower() == expected
+
 
 # Shared by all instances. The HTTP server builds a new instance per request,
 # so the episode must live outside the instance. The arena runs one episode
@@ -69,7 +82,7 @@ class DerivationCheckEnvironment(Environment):
 
         ep["steps"] += 1
         if action.answer is not None and action.grep is None:
-            correct = action.answer.strip().lower() == ep["answer"]
+            correct = _same_answer(action.answer, ep["answer"])
             return self._finish(1.0 if correct else 0.0, "correct" if correct else "wrong")
         if action.grep is not None and action.answer is None:
             needle = action.grep.lower()

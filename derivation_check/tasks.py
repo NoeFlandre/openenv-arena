@@ -3,7 +3,7 @@
 """
 Tasks for the Derivation Check environment.
 
-Two families: a worked calculation with some wrong equations (math and formal
+Two families: a list of independent equations with some wrong ones (math and formal
 reasoning), and a list of social media captions with a length limit (media and
 content production). Each task builds one log from its seed. The answer is the
 first line that breaks the rule, computed when the task is built.
@@ -81,23 +81,35 @@ def _equation(rng: random.Random) -> tuple[int, str, int, int]:
     return a, op, b, result
 
 
+def _wrong_value(result: int, tier: int, rng: random.Random) -> int:
+    """A wrong result that differs at a random digit position, with a small size at harder levels.
+    The result stays zero or more."""
+    magnitude = rng.randint(1, {0: 9, 1: 4, 2: 2}[tier])
+    position = rng.randrange(0, max(1, len(str(result)) - 1))
+    delta = magnitude * 10**position
+    if rng.random() < 0.5 or result - delta < 0:
+        return result + delta
+    return result - delta
+
+
 def _make_math(level: int, rng: random.Random) -> Built:
     tier = _tier(level)
     count = MATH_STEPS[tier] + rng.randint(0, 4)
-    wrong = set(rng.sample(range(1, count + 1), MATH_WRONG[tier]))
+    # Wrong equations sit in the back half, so a solver must check most of the log.
+    wrong = set(rng.sample(range(count // 2, count + 1), MATH_WRONG[tier]))
     lines = []
     first_wrong = 0
     for step in range(1, count + 1):
         a, op, b, result = _equation(rng)
         shown = result
         if step in wrong:
-            shown = result + rng.choice([d for d in range(-9, 10) if d != 0])
-            if not first_wrong:
+            shown = _wrong_value(result, tier, rng)
+            if not first_wrong or step < first_wrong:
                 first_wrong = step
         lines.append(f"step {step:02d}: {a} {op} {b} = {shown}")
     question = _ask(
-        "Each line is one step of a calculation. Some equations are wrong. Which step is the "
-        "first wrong equation?",
+        "Each line is an independent equation, not a chain. Some equations are wrong. Which step "
+        "is the first wrong equation?",
         "the step number as written, for example 07",
     )
     return Built(lines, f"{first_wrong:02d}", question, 0)
@@ -176,18 +188,22 @@ def _caption_text(target: int, rng: random.Random) -> str:
 
 
 def _make_caption(level: int, rng: random.Random) -> Built:
+    """Most captions are well under the limit. Only the first over-limit caption and the one before
+    it sit close to the limit, so a reader can rule out most captions by rough length."""
     tier = _tier(level)
     count = CAPTION_COUNTS[tier]
-    first_over = rng.randint(2, count - 2)
-    low = {0: 60, 1: 80, 2: 84}[tier]
+    first_over = rng.randint(0, count - 1)
+    low = {0: 50, 1: 60, 2: 70}[tier]
+    before_near = {0: (80, 90), 1: (85, 90), 2: (88, 90)}[tier]
+    over_range = {0: (91, 100), 1: (91, 95), 2: (91, 93)}[tier]
     lengths = []
     for index in range(count):
-        if index < first_over:
-            lengths.append(rng.randint(low, CAPTION_LIMIT))
-        elif index == first_over:
-            lengths.append(
-                rng.randint(CAPTION_LIMIT + 1, CAPTION_LIMIT + {0: 10, 1: 4, 2: 3}[tier])
-            )
+        if index == first_over:
+            lengths.append(rng.randint(*over_range))
+        elif index == first_over - 1:
+            lengths.append(rng.randint(*before_near))
+        elif index < first_over:
+            lengths.append(rng.randint(low, CAPTION_LIMIT - 10))
         else:
             lengths.append(rng.randint(low, CAPTION_LIMIT + 10))
     texts = [_caption_text(length, rng) for length in lengths]

@@ -119,8 +119,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "math-01",
@@ -131,8 +131,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "math-02",
@@ -143,8 +143,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "math-03",
@@ -155,8 +155,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "math-04",
@@ -167,8 +167,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "math-05",
@@ -179,8 +179,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "math-06",
@@ -191,8 +191,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "math-07",
@@ -203,8 +203,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "caption-00",
@@ -215,8 +215,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "caption-01",
@@ -227,8 +227,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "caption-02",
@@ -239,8 +239,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "caption-03",
@@ -251,8 +251,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "caption-04",
@@ -263,8 +263,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "caption-05",
@@ -275,8 +275,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "caption-06",
@@ -287,8 +287,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     },
     {
       "task_id": "caption-07",
@@ -299,8 +299,8 @@
       "tool_wall_s": 30,
       "tool_calls_total": 16,
       "tool_calls_per_minute": 30,
-      "completion_tokens": 2048,
-      "context_tokens": 8192
+      "completion_tokens": 4096,
+      "context_tokens": 16384
     }
   ],
   "example_actions": [

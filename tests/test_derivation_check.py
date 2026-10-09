@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
+import random
 import re
 
 import pytest
@@ -10,7 +11,7 @@ from derivation_check.server.derivation_check_environment import (
     MAX_STEPS,
     DerivationCheckEnvironment,
 )
-from derivation_check.tasks import CAPTION_LIMIT, TASKS, build
+from derivation_check.tasks import CAPTION_LIMIT, TASKS, _make_caption, _make_math, build
 
 MATH = re.compile(r"^step (\d{2}): (\d+) ([+*-]) (\d+) = (\d+)$")
 CAPTION = re.compile(r'^cap (\d{2}) text="(.*)"$')
@@ -153,3 +154,40 @@ def test_schema_matches_models() -> None:
     schema = TestClient(app).get("/schema").json()
     assert schema["action"] == DerivationCheckAction.model_json_schema()
     assert schema["observation"] == DerivationCheckObservation.model_json_schema()
+
+
+@pytest.mark.parametrize(
+    "form", ["{n}", "{n:02d}", "{n:02d}.", "step {n:02d}", "Step {n}", "cap {n:02d}"]
+)
+def test_number_spellings_score_one(form: str) -> None:
+    task_id = "caption-03"
+    number = int(build(task_id).answer)
+    env = DerivationCheckEnvironment()
+    env.reset(task_id=task_id)
+    obs = env.step(DerivationCheckAction(answer=form.format(n=number)))
+    assert obs.reward == 1.0, form
+
+
+def test_other_numbers_score_zero() -> None:
+    task_id = "caption-03"
+    number = int(build(task_id).answer)
+    env = DerivationCheckEnvironment()
+    env.reset(task_id=task_id)
+    obs = env.step(DerivationCheckAction(answer=f"step {number + 1:02d}"))
+    assert obs.reward == 0.0
+
+
+@pytest.mark.parametrize("seed", range(300))
+def test_generated_math_lines_are_valid(seed: int) -> None:
+    built = _make_math(seed % 8, random.Random(seed))
+    for line in built.lines:
+        match = MATH.match(line)
+        assert match is not None, line
+        assert int(match.group(5)) >= 0, line
+    assert _oracle_math(built.lines) == built.answer
+
+
+@pytest.mark.parametrize("seed", range(300))
+def test_generated_caption_answers_match_oracle(seed: int) -> None:
+    built = _make_caption(seed % 8, random.Random(seed))
+    assert _oracle_caption(built.lines) == built.answer
