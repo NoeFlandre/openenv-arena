@@ -2,7 +2,7 @@ name: Publish Audit Trail image
 
 on:
   push:
-    tags: ["audit-trail-v*"]
+    branches: ["audit-trail-v1"]
   workflow_dispatch:
     inputs:
       tag:
@@ -36,7 +36,7 @@ jobs:
           file: Dockerfile.audit-trail
           platforms: linux/amd64
           push: true
-          tags: ${{ env.IMAGE }}:${{ inputs.tag || github.ref_name }}
+          tags: ${{ env.IMAGE }}:${{ inputs.tag || 'v1' }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=Apache-2.0
