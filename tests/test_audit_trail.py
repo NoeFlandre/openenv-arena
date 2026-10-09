@@ -49,7 +49,7 @@ def _oracle_ledger(lines: list[str]) -> str:
         assert match, line
         rows.append(match.groups())
     reversed_refs = {ref for _, _, _, kind, _, ref in rows if kind == "reversal"}
-    answers = []
+    duplicates = []
     for second_s, txn, acct, kind, amount, _ in rows:
         if kind != "debit":
             continue
@@ -62,10 +62,10 @@ def _oracle_ledger(lines: list[str]) -> str:
                 and 0 < gap <= 90
                 and earlier_txn not in reversed_refs
             ):
-                answers.append(txn)
+                duplicates.append((_seconds(second_s), txn))
                 break
-    assert len(answers) == 1, answers
-    return answers[0].lower()
+    assert duplicates, "no duplicate"
+    return min(duplicates)[1].lower()
 
 
 def _oracle_sensor(lines: list[str]) -> str:
@@ -197,3 +197,22 @@ def test_unknown_task_is_rejected() -> None:
     env = AuditTrailEnvironment()
     with pytest.raises(ValueError):
         env.reset(task_id="nope-00")
+
+
+def test_grep_empty_returns_first_ten_lines() -> None:
+    env = AuditTrailEnvironment()
+    env.reset(task_id="sensor-00")
+    obs = env.step(AuditTrailAction(grep=""))
+    expected = build("sensor-00").lines[:MAX_MATCHES]
+    assert obs.output.splitlines()[:MAX_MATCHES] == expected
+
+
+def test_schema_matches_models() -> None:
+    from fastapi.testclient import TestClient
+
+    from audit_trail.models import AuditTrailAction, AuditTrailObservation
+    from audit_trail.server.app import app
+
+    schema = TestClient(app).get("/schema").json()
+    assert schema["action"] == AuditTrailAction.model_json_schema()
+    assert schema["observation"] == AuditTrailObservation.model_json_schema()
