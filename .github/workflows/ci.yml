@@ -42,3 +42,12 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build Audit Trail image for linux/amd64 (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.audit-trail
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha,scope=audit-trail
+          cache-to: type=gha,mode=max,scope=audit-trail
