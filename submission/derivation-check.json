@@ -1,0 +1,319 @@
+{
+  "submission_id": "derivation-check-v1",
+  "name": "Derivation Check",
+  "image": "ghcr.io/noeflandre/derivation-check:v1",
+  "schema": {
+    "action": {
+      "additionalProperties": false,
+      "description": "Search the log or answer. Send exactly one of the two fields.",
+      "properties": {
+        "metadata": {
+          "additionalProperties": true,
+          "description": "Additional metadata for the action",
+          "title": "Metadata",
+          "type": "object"
+        },
+        "grep": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Return up to 10 log lines containing this text (case-insensitive). An empty string returns the first 10 lines.",
+          "title": "Grep"
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The value the question asks for. Ends the episode.",
+          "title": "Answer"
+        }
+      },
+      "title": "DerivationCheckAction",
+      "type": "object"
+    },
+    "observation": {
+      "additionalProperties": false,
+      "description": "What the agent sees after each action.",
+      "properties": {
+        "done": {
+          "default": false,
+          "description": "Whether the episode has terminated",
+          "title": "Done",
+          "type": "boolean"
+        },
+        "reward": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Reward signal from the last action",
+          "title": "Reward"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "description": "Additional metadata for the observation",
+          "title": "Metadata",
+          "type": "object"
+        },
+        "task_id": {
+          "default": "",
+          "description": "Task being played",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "question": {
+          "default": "",
+          "description": "The question. Sent once, at reset.",
+          "title": "Question",
+          "type": "string"
+        },
+        "output": {
+          "default": "",
+          "description": "Result of the last action",
+          "title": "Output",
+          "type": "string"
+        },
+        "steps_left": {
+          "default": 0,
+          "description": "Actions left before the episode ends",
+          "title": "Steps Left",
+          "type": "integer"
+        }
+      },
+      "title": "DerivationCheckObservation",
+      "type": "object"
+    }
+  },
+  "tasks": [
+    {
+      "task_id": "math-00",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "math-01",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "math-02",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "math-03",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "math-04",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "math-05",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "math-06",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "math-07",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "caption-00",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "caption-01",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "caption-02",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "caption-03",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "caption-04",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "caption-05",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "caption-06",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    },
+    {
+      "task_id": "caption-07",
+      "split": "train",
+      "reset_wall_s": 120,
+      "rollout_wall_s": 600,
+      "verifier_wall_s": 120,
+      "tool_wall_s": 30,
+      "tool_calls_total": 16,
+      "tool_calls_per_minute": 30,
+      "completion_tokens": 2048,
+      "context_tokens": 8192
+    }
+  ],
+  "example_actions": [
+    {
+      "grep": "step 0"
+    },
+    {
+      "answer": "unknown"
+    }
+  ],
+  "finish_action": {
+    "answer": "unknown"
+  },
+  "dataset": "NoeFlandre/derivation-check",
+  "source": "https://github.com/NoeFlandre/openenv-arena"
+}

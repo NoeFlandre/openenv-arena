@@ -1,0 +1,16 @@
+{"task_id": "math-00", "split": "train", "family": "math", "level": 0, "seed": 3000}
+{"task_id": "math-01", "split": "train", "family": "math", "level": 1, "seed": 3001}
+{"task_id": "math-02", "split": "train", "family": "math", "level": 2, "seed": 3002}
+{"task_id": "math-03", "split": "train", "family": "math", "level": 3, "seed": 3003}
+{"task_id": "math-04", "split": "train", "family": "math", "level": 4, "seed": 3004}
+{"task_id": "math-05", "split": "train", "family": "math", "level": 5, "seed": 3005}
+{"task_id": "math-06", "split": "train", "family": "math", "level": 6, "seed": 3006}
+{"task_id": "math-07", "split": "train", "family": "math", "level": 7, "seed": 3007}
+{"task_id": "caption-00", "split": "train", "family": "caption", "level": 0, "seed": 3010}
+{"task_id": "caption-01", "split": "train", "family": "caption", "level": 1, "seed": 3011}
+{"task_id": "caption-02", "split": "train", "family": "caption", "level": 2, "seed": 3012}
+{"task_id": "caption-03", "split": "train", "family": "caption", "level": 3, "seed": 3013}
+{"task_id": "caption-04", "split": "train", "family": "caption", "level": 4, "seed": 3014}
+{"task_id": "caption-05", "split": "train", "family": "caption", "level": 5, "seed": 3015}
+{"task_id": "caption-06", "split": "train", "family": "caption", "level": 6, "seed": 3016}
+{"task_id": "caption-07", "split": "train", "family": "caption", "level": 7, "seed": 3017}
