@@ -12,14 +12,30 @@ import importlib
 from .base import Family
 
 FAMILY_MODULES = [
-    "sw1", "sw2", "sw3",
-    "ind1", "ind2", "ind3",
-    "sci1", "sci2", "sci3",
-    "off1", "off2", "off3",
-    "fin1", "fin2", "fin3",
-    "math1", "math2", "math3",
-    "sec1", "sec2", "sec3",
-    "med1", "med2", "med3",
+    "sw1",
+    "sw2",
+    "sw3",
+    "ind1",
+    "ind2",
+    "ind3",
+    "sci1",
+    "sci2",
+    "sci3",
+    "off1",
+    "off2",
+    "off3",
+    "fin1",
+    "fin2",
+    "fin3",
+    "math1",
+    "math2",
+    "math3",
+    "sec1",
+    "sec2",
+    "sec3",
+    "med1",
+    "med2",
+    "med3",
 ]
 
 DOMAIN_IDS = {

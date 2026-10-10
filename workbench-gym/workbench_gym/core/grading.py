@@ -108,7 +108,9 @@ def score_answer(answer: Any, fields: dict[str, Field], want: dict[str, Any]) ->
         return 0.0
     if answer_size(answer) > MAX_ANSWER_CHARS:
         return 0.0
-    correct = sum(1 for name, spec in fields.items() if field_ok(spec, answer.get(name), want[name]))
+    correct = sum(
+        1 for name, spec in fields.items() if field_ok(spec, answer.get(name), want[name])
+    )
     if correct == 0:
         return 0.0
     if correct == len(fields):

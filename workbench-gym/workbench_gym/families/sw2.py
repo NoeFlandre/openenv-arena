@@ -24,8 +24,18 @@ QUESTION = (
     "when run with python3? Give that exact line as output."
 )
 HELPERS = [
-    "normalize", "to_cents", "label_row", "split_sku", "clamp_qty", "tidy_name",
-    "rows_by_day", "fmt_total", "parse_id", "dedupe", "pick_rate", "round_pair",
+    "normalize",
+    "to_cents",
+    "label_row",
+    "split_sku",
+    "clamp_qty",
+    "tidy_name",
+    "rows_by_day",
+    "fmt_total",
+    "parse_id",
+    "dedupe",
+    "pick_rate",
+    "round_pair",
 ]
 NOTES = [
     "# keep in sync with the billing export",
@@ -72,8 +82,9 @@ def _push_result(bucket: list[int], item: int, count_before: bool) -> int:
     return before if count_before else len(bucket)
 
 
-def _output(vals: list[int], fresh_default=False, fresh_explicit=False,
-            count_before=False, real_max=False) -> str:
+def _output(
+    vals: list[int], fresh_default=False, fresh_explicit=False, count_before=False, real_max=False
+) -> str:
     default: list[int] = []
     mine: list[int] = []
     out: list[int] = []

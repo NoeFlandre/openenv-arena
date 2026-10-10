@@ -5,9 +5,9 @@
 import os
 
 import pytest
+from workbench_gym.families import FAMILY_MODULES, load_families
 
 from tests.gates import check_family
-from workbench_gym.families import FAMILY_MODULES, load_families
 
 SEEDS = int(os.environ.get("GATE_SEEDS", "200"))
 FAMILIES = load_families()

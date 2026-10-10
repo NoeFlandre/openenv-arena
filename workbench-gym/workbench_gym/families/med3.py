@@ -18,7 +18,7 @@ import random
 import re
 
 from ..core.grading import Field
-from .base import Built, Family
+from .base import Built, Family, must_match
 
 LINES = 14
 PAGES = {1: 2, 2: 3, 3: 4}
@@ -62,7 +62,7 @@ QUOTE = (
 )
 
 _CLAUSE_RE = re.compile(
-    r'(Exemption|Reinstatement): R(\d) (?:does not apply to|applies again to) lines that '
+    r"(Exemption|Reinstatement): R(\d) (?:does not apply to|applies again to) lines that "
     r'(?:start with "([^"]+)"|contain a double quote)\.'
 )
 
@@ -84,7 +84,8 @@ def _matches(prefix: str | None, line: str) -> bool:
 
 
 def _applies(rule: int, line: str, clauses: list, first: bool = False) -> bool:
-    """Whether ``rule`` applies to ``line``. The last matching clause decides, or the first if ``first``."""
+    """Whether ``rule`` applies to ``line``. The last matching clause decides,
+    or the first if ``first``."""
     decided = True
     for kind, clause_rule, prefix in clauses:
         if clause_rule != rule or not _matches(prefix, line):
@@ -126,15 +127,24 @@ def _draft_line(rng: random.Random) -> str:
 
 
 def _addendum_page(page: int, n_pages: int) -> str:
-    lines = [f"Copy style guide, Northgate Media, page {page} of {n_pages}, addendum: {PAGE_TITLES[page]}"]
+    lines = [
+        f"Copy style guide, Northgate Media, page {page} of {n_pages}, "
+        f"addendum: {PAGE_TITLES[page]}"
+    ]
     for i, (kind, rule, prefix) in enumerate(ADDENDA[page], start=1):
         tag = f"X{page}.{i}"
         if kind == "exempt" and prefix is None:
-            lines.append(f"{tag} Exemption: R{rule} does not apply to lines that contain a double quote.")
+            lines.append(
+                f"{tag} Exemption: R{rule} does not apply to lines that contain a double quote."
+            )
         elif kind == "exempt":
-            lines.append(f'{tag} Exemption: R{rule} does not apply to lines that start with "{prefix}".')
+            lines.append(
+                f'{tag} Exemption: R{rule} does not apply to lines that start with "{prefix}".'
+            )
         else:
-            lines.append(f'{tag} Reinstatement: R{rule} applies again to lines that start with "{prefix}".')
+            lines.append(
+                f'{tag} Reinstatement: R{rule} applies again to lines that start with "{prefix}".'
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -165,7 +175,7 @@ class CopyeditStyle(Family):
             [n - 1 for n in answer],
         ]
         for j in range(len(addenda)):
-            candidates.append(_broken(lines, addenda[:j] + addenda[j + 1:]))
+            candidates.append(_broken(lines, addenda[:j] + addenda[j + 1 :]))
 
         decoys: list[dict] = []
         for cand in candidates:
@@ -194,7 +204,7 @@ class CopyeditStyle(Family):
     def solve(self, files: dict[str, str], question: str) -> dict:
         pages = sorted(
             (name for name in files if re.fullmatch(r"style_p\d+\.txt", name)),
-            key=lambda name: int(re.search(r"\d+", name).group()),
+            key=lambda name: int(must_match(r"\d+", name).group()),
         )
         clauses: list[tuple[str, int, str | None]] = []
         for name in pages:

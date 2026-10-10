@@ -19,7 +19,7 @@ import re
 from fractions import Fraction
 
 from ..core.grading import Field
-from .base import Built, Family
+from .base import Built, Family, must_match
 
 EDITS = {1: 3, 2: 5, 3: 7}
 FPS_CHOICES = (24, 25, 30)
@@ -144,7 +144,7 @@ class EditTimeline(Family):
 
     def solve(self, files: dict[str, str], question: str) -> dict:
         edl = files["edl.txt"]
-        fps = int(re.search(r"^FPS (\d+)$", edl, re.M).group(1))
+        fps = int(must_match(r"^FPS (\d+)$", edl, re.M).group(1))
         total = 0
         rejected: list[str] = []
         for line in edl.split("\n"):

@@ -107,10 +107,13 @@ def check_family(family, seeds: int = 200) -> list[str]:
                 elif score_answer(decoy, built.fields, built.answer) >= 1.0:
                     fail(where, f"decoy scores 1.0: {decoy}")
 
-            if score_answer(_reserialise(built.answer, built.fields), built.fields, built.answer) != 1.0:
+            if (
+                score_answer(_reserialise(built.answer, built.fields), built.fields, built.answer)
+                != 1.0
+            ):
                 fail(where, "re-serialised answer does not score 1.0")
 
-            for name, value in built.answer.items():
+            for value in built.answer.values():
                 if isinstance(value, str) and len(value) >= 3 and value in built.question:
                     fail(where, f"answer text {value!r} appears in the question")
                 if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -132,7 +135,9 @@ def check_family(family, seeds: int = 200) -> list[str]:
         key, count = counts.most_common(1)[0]
         rate = count / prior_seeds
         if rate > PRIOR_LIMIT:
-            fail(f"L{level}", f"most common answer {key} solves {rate:.0%} (limit {PRIOR_LIMIT:.0%})")
+            fail(
+                f"L{level}", f"most common answer {key} solves {rate:.0%} (limit {PRIOR_LIMIT:.0%})"
+            )
     return failures
 
 

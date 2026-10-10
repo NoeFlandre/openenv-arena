@@ -3,7 +3,6 @@
 """Framework tests: grading rule, file store, py sandbox and the episode protocol."""
 
 import pytest
-
 from workbench_gym.core.grading import Field, canon, field_ok, score_answer
 from workbench_gym.core.protocol import MAX_CALLS, parse_task_id
 from workbench_gym.core.sandbox import run_python
@@ -18,7 +17,10 @@ WANT = {"n": 3, "who": "auth", "ids": ["a", "b"], "ratio": "1/2"}
 
 def test_reward_rule():
     assert score_answer(dict(WANT), FIELDS, WANT) == 1.0
-    assert score_answer({"n": 3, "who": "auth", "ids": ["b", "a"], "ratio": "2/4"}, FIELDS, WANT) == 1.0
+    assert (
+        score_answer({"n": 3, "who": "auth", "ids": ["b", "a"], "ratio": "2/4"}, FIELDS, WANT)
+        == 1.0
+    )
     assert score_answer({}, FIELDS, WANT) == 0.0
     assert score_answer(None, FIELDS, WANT) == 0.0
     assert score_answer({"n": 9, "who": "x", "ids": [], "ratio": "0"}, FIELDS, WANT) == 0.0
@@ -91,7 +93,7 @@ def test_episode_protocol_end_to_end():
     env = WorkbenchEnvironment(families=load_families(), allow_seed=True)
     obs = env.reset(task_id="med2-L1", seed=11)
     assert obs.done is False and obs.calls_left == MAX_CALLS
-    answer = env._episode["built"].answer
+    answer = env._require_episode()["built"].answer
     obs = env.step(WorkbenchAction(tool="ls", args={}))
     assert obs.calls_left == MAX_CALLS - 1 and obs.done is False
     obs = env.step(WorkbenchAction(tool="submit", args={"answer": answer}))
@@ -126,4 +128,4 @@ def test_client_seed_is_ignored_by_default():
     b = WorkbenchEnvironment(families=load_families())
     a.reset(task_id="med2-L2", seed=1)
     b.reset(task_id="med2-L2", seed=1)
-    assert a._episode["built"].files != b._episode["built"].files
+    assert a._require_episode()["built"].files != b._require_episode()["built"].files

@@ -86,8 +86,8 @@ class DilutionErratum(Family):
             candidates = [
                 _dilution(proto),
                 _dilution(states[-2]),
-                Fraction(cur["stock"]) * Fraction(cur["a1"], cur["v1"]),
-                Fraction(cur["stock"]) * Fraction(cur["a2"], cur["v2"]),
+                Fraction(cur["stock"]) * Fraction(cur["a1"]) / Fraction(cur["v1"]),
+                Fraction(cur["stock"]) * Fraction(cur["a2"]) / Fraction(cur["v2"]),
             ]
             decoys: list[Fraction] = []
             for value in candidates:
@@ -99,7 +99,8 @@ class DilutionErratum(Family):
                 "SOP-12 serial dilution of compound X (protocol v2)\n"
                 f"Stock: {proto['stock']:.1f} mM in DMSO.\n"
                 f"Step 1: transfer {proto['a1']} uL stock into {proto['v1']} uL buffer.\n"
-                f"Step 2: transfer {proto['a2']} uL of the step 1 mix into {proto['v2']} uL buffer.\n"
+                f"Step 2: transfer {proto['a2']} uL of the step 1 mix "
+                f"into {proto['v2']} uL buffer.\n"
                 "Tube F = step 2 mix.\n"
             )
             lines = [

@@ -158,7 +158,8 @@ class LedgerFormats(Family):
             usd = rates[day_s]["USD"]
             gbp = rates[day_s]["GBP"]
             rate_lines += (
-                f"{day_s} USD {usd // 10000}.{usd % 10000:04d} GBP {gbp // 10000}.{gbp % 10000:04d}\n"
+                f"{day_s} USD {usd // 10000}.{usd % 10000:04d} "
+                f"GBP {gbp // 10000}.{gbp % 10000:04d}\n"
             )
         policy = (
             "FX and sign rules, export 2026-Q3\n"

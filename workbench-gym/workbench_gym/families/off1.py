@@ -22,18 +22,32 @@ import csv
 import io
 import itertools
 import random
-import re
 
 from ..core.grading import Field
-from .base import Built, Family
+from .base import Built, Family, must_match
 
 FIELDS = ("name", "email", "phone", "company", "city")
 COLUMNS = ("person_id", "source", "date", "name", "email", "phone", "company", "city")
 SOURCE_ORDER = ("crm", "web", "import", "card")
 RANK = {s: len(SOURCE_ORDER) - i for i, s in enumerate(SOURCE_ORDER)}
-DATES = ("2026-01-14", "2026-02-27", "2026-04-09", "2026-05-22", "2026-07-03", "2026-08-18", "2026-09-30")
+DATES = (
+    "2026-01-14",
+    "2026-02-27",
+    "2026-04-09",
+    "2026-05-22",
+    "2026-07-03",
+    "2026-08-18",
+    "2026-09-30",
+)
 DOMAINS = ("helixlabs.eu", "gmail.com", "outlook.fr", "vellum.fr")
-COMPANIES = ("Helix Labs", "Helix Labs SAS", "Vellum Works", "Orca Health", "Northgate Partners", "Brightwell")
+COMPANIES = (
+    "Helix Labs",
+    "Helix Labs SAS",
+    "Vellum Works",
+    "Orca Health",
+    "Northgate Partners",
+    "Brightwell",
+)
 CITIES = ("Lyon", "Lille", "Nantes", "Grenoble", "Bordeaux", "Rennes", "Paris")
 TARGET = "P-5083"
 OTHER = "P-2217"
@@ -81,7 +95,12 @@ def _row(person, profile, fill, rng, source=None, date=None):
         "name": maybe(lambda: rng.choice(profile["names"])),
         "email": maybe(lambda: f"{rng.choice(profile['locals'])}@{rng.choice(DOMAINS)}"),
         "phone": maybe(
-            lambda: "+33 " + rng.choice("67") + " " + " ".join(f"{rng.randint(0, 99):02d}" for _ in range(4))
+            lambda: (
+                "+33 "
+                + rng.choice("67")
+                + " "
+                + " ".join(f"{rng.randint(0, 99):02d}" for _ in range(4))
+            )
         ),
         "company": maybe(lambda: rng.choice(COMPANIES)),
         "city": maybe(lambda: rng.choice(CITIES)),
@@ -91,8 +110,13 @@ def _row(person, profile, fill, rng, source=None, date=None):
 def _target_rows(n, rng):
     newest = rng.choice(DATES[3:])
     older = DATES[: DATES.index(newest)]
-    rows = [_row(TARGET, TARGET_PROFILE, FILL_BATCH, rng, source=s, date=newest) for s in rng.sample(SOURCE_ORDER, BATCH)]
-    rows += [_row(TARGET, TARGET_PROFILE, FILL, rng, date=rng.choice(older)) for _ in range(n - BATCH)]
+    rows = [
+        _row(TARGET, TARGET_PROFILE, FILL_BATCH, rng, source=s, date=newest)
+        for s in rng.sample(SOURCE_ORDER, BATCH)
+    ]
+    rows += [
+        _row(TARGET, TARGET_PROFILE, FILL, rng, date=rng.choice(older)) for _ in range(n - BATCH)
+    ]
     return rows
 
 
@@ -155,10 +179,16 @@ def _whole_row(rows, date_mode, tie):
 
 
 def _simple_rules(rows):
-    """Yield (name, merged) for every simple merge rule the builder checks. DOCUMENTED is one of them."""
+    """Yield (name, merged) for every simple merge rule the builder checks.
+
+    DOCUMENTED is one of them.
+    """
     for date_mode in DATE_MODES:
         for tie in SIMPLE_TIES:
-            yield (date_mode, tie), {"merged": {f: _field_pick(rows, f, date_mode, tie) for f in FIELDS}}
+            yield (
+                (date_mode, tie),
+                {"merged": {f: _field_pick(rows, f, date_mode, tie) for f in FIELDS}},
+            )
     yield ("any", "rank_date"), {"merged": {f: _field_rank_date(rows, f) for f in FIELDS}}
     yield ("majority", None), {"merged": {f: _majority(rows, f) for f in FIELDS}}
     for date_mode in DATE_MODES:
@@ -198,7 +228,8 @@ class ContactMerge(Family):
             if sum(1 for f in FIELDS if merged[f]) < 4 or not _tie_matters(mine):
                 continue
             answer = {"merged": merged}
-            # Reject any instance that a simple rule still solves. The check stops at the first match.
+            # Reject any instance that a simple rule still solves.
+            # The check stops at the first match.
             if any(value == answer for name, value in _simple_rules(mine) if name != DOCUMENTED):
                 continue
             decoys: list[dict] = []
@@ -222,8 +253,12 @@ class ContactMerge(Family):
         raise RuntimeError("off1: no valid instance found")
 
     def solve(self, files: dict[str, str], question: str) -> dict:
-        person = re.search(r"P-\d{4}", question).group(0)
-        order = re.search(r"highest first: ([a-z, ]+)\.", files["merge_rules.txt"]).group(1).split(", ")
+        person = must_match(r"P-\d{4}", question).group(0)
+        order = (
+            must_match(r"highest first: ([a-z, ]+)\.", files["merge_rules.txt"])
+            .group(1)
+            .split(", ")
+        )
         rank = {s: len(order) - i for i, s in enumerate(order)}
         rows = [
             row

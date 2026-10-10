@@ -193,16 +193,28 @@ TEMPLATES = {
 DECOYS = {
     "lib/net.py": ("import os", 'def flush_routes():\n    os.system("ip route flush cache")\n'),
     "lib/session.py": ("import os", 'def flush_to_disk():\n    os.system("sync")\n'),
-    "services/web/app.py": (None, "def unverified_emails(users):\n    return [u.email for u in users if not u.verified]\n"),
-    "services/web/store.py": (None, "def unverified(rows):\n    return [r for r in rows if not r.verified]\n"),
-    "services/worker/export.py": (None, 'def is_live_key(key):\n    return key.startswith("sk_live_")\n'),
-    "services/worker/jobs.py": ("import os", 'def log_start():\n    os.system("logger -t jobs started")\n'),
+    "services/web/app.py": (
+        None,
+        "def unverified_emails(users):\n    return [u.email for u in users if not u.verified]\n",
+    ),
+    "services/web/store.py": (
+        None,
+        "def unverified(rows):\n    return [r for r in rows if not r.verified]\n",
+    ),
+    "services/worker/export.py": (
+        None,
+        'def is_live_key(key):\n    return key.startswith("sk_live_")\n',
+    ),
+    "services/worker/jobs.py": (
+        "import os",
+        'def log_start():\n    os.system("logger -t jobs started")\n',
+    ),
 }
 
 
 def _mirror(path: str) -> str:
     """Where the old copy of a shipped file lives, under legacy/."""
-    tail = path[len("services/"):] if path.startswith("services/") else path
+    tail = path[len("services/") :] if path.startswith("services/") else path
     return "legacy/" + tail
 
 

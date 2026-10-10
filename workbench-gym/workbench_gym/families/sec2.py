@@ -19,16 +19,43 @@ import re
 from collections import Counter
 
 from ..core.grading import Field
-from .base import Built, Family
+from .base import Built, Family, must_match
 
 K_BY_LEVEL = {1: 3, 2: 4, 3: 5}
 EDGE_GW = "10.0.0.1"
 TRAP_GW = "10.0.0.2"
 CLIENT_GW = "10.0.0.3"
 NAMES = (
-    "amy", "bo", "chen", "dara", "eli", "fay", "gus", "hana", "ivo", "jo",
-    "kim", "lea", "max", "nia", "omar", "pia", "quin", "rosa", "sol", "tia",
-    "uma", "vic", "wes", "xan", "yara", "zed", "ada", "ben", "cy", "ned",
+    "amy",
+    "bo",
+    "chen",
+    "dara",
+    "eli",
+    "fay",
+    "gus",
+    "hana",
+    "ivo",
+    "jo",
+    "kim",
+    "lea",
+    "max",
+    "nia",
+    "omar",
+    "pia",
+    "quin",
+    "rosa",
+    "sol",
+    "tia",
+    "uma",
+    "vic",
+    "wes",
+    "xan",
+    "yara",
+    "zed",
+    "ada",
+    "ben",
+    "cy",
+    "ned",
 )
 LINE = re.compile(r"^(\d+) (\S+) (OK|FAIL) (\S+)>(\S+)$")
 
@@ -100,7 +127,9 @@ class TwoHopAuth(Family):
             # Shared client f: K-1 fails then OK by x1, then one fail and OK by x2.
             block_f = [(x1, "FAIL", f, CLIENT_GW)] * (k - 1)
             block_f += [
-                (x1, "OK", f, CLIENT_GW), (x2, "FAIL", f, CLIENT_GW), (x2, "OK", f, CLIENT_GW),
+                (x1, "OK", f, CLIENT_GW),
+                (x2, "FAIL", f, CLIENT_GW),
+                (x2, "OK", f, CLIENT_GW),
             ]
             # Chatty: many fails from one client through the trap gateway, never a success.
             block_z = [(chatty, "FAIL", z, TRAP_GW)] * (k + 2)
@@ -165,7 +194,7 @@ class TwoHopAuth(Family):
         )
 
     def solve(self, files: dict[str, str], question: str) -> dict:
-        k = int(re.search(r"K = (\d+)", files["policy.txt"]).group(1))
+        k = int(must_match(r"K = (\d+)", files["policy.txt"]).group(1))
         events = []
         for line in files["auth.log"].split("\n"):
             m = LINE.match(line.strip())

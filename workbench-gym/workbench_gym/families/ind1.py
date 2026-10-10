@@ -21,15 +21,20 @@ QUESTION = (
     "jobs.csv lists the jobs for one line and blackouts.txt the power-off windows. Follow "
     "rules.txt. Give makespan: the minute the last job finishes."
 )
-RULES = "\n".join([
-    "Shift starts at minute 0. The line runs one job at a time.",
-    "Run order: earlier due first. Equal due goes to the lower job number.",
-    "A job runs for its minutes without pause.",
-    "Power is off for start <= minute < end, as listed in blackouts.txt.",
-    "A job cannot run while power is off, so it waits until power is back.",
-    "A job that finishes at the minute power goes off is complete.",
-    "Makespan is the minute the last job finishes.",
-]) + "\n"
+RULES = (
+    "\n".join(
+        [
+            "Shift starts at minute 0. The line runs one job at a time.",
+            "Run order: earlier due first. Equal due goes to the lower job number.",
+            "A job runs for its minutes without pause.",
+            "Power is off for start <= minute < end, as listed in blackouts.txt.",
+            "A job cannot run while power is off, so it waits until power is back.",
+            "A job that finishes at the minute power goes off is complete.",
+            "Makespan is the minute the last job finishes.",
+        ]
+    )
+    + "\n"
+)
 
 
 def _earliest(t: int, minutes: int, windows: list[tuple[int, int]], inclusive: bool = False) -> int:
@@ -121,12 +126,10 @@ class BlackoutSchedule(Family):
             raise AssertionError("no valid instance")
         jobs, windows = inst["jobs"], inst["windows"]
         files = {
-            "jobs.csv": "job,minutes,due\n" + "".join(
-                f"J{j['id']},{j['minutes']},{j['due']}\n" for j in jobs
-            ),
-            "blackouts.txt": "# power-off windows, minutes from shift start (start end)\n" + "".join(
-                f"{s} {e}\n" for s, e in windows
-            ),
+            "jobs.csv": "job,minutes,due\n"
+            + "".join(f"J{j['id']},{j['minutes']},{j['due']}\n" for j in jobs),
+            "blackouts.txt": "# power-off windows, minutes from shift start (start end)\n"
+            + "".join(f"{s} {e}\n" for s, e in windows),
             "rules.txt": RULES,
         }
         return Built(

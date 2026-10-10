@@ -23,9 +23,9 @@ import random
 import secrets
 import sys
 import time
+from typing import Any
 
 import httpx
-
 from workbench_gym.core.protocol import MAX_CALLS
 from workbench_gym.families import load_families
 from workbench_gym.models import WorkbenchAction
@@ -35,11 +35,12 @@ ROUTER_URL = "https://router.huggingface.co/v1/chat/completions"
 MODEL = "Qwen/Qwen3.8-27B:deepinfra"
 MAX_REPLY_TOKENS = 1024
 FINISH = {"tool": "submit", "args": {"answer": None}}
+FAMILIES: dict = {}
 
 SYSTEM = (
     "You work in a small workspace of files. Each reply is exactly one JSON object and "
-    "nothing else: a tool call such as {\"tool\":\"ls\",\"args\":{\"path\":\"\"}}, or "
-    "{\"tool\":\"submit\",\"args\":{\"answer\":{...}}} to finish. No prose, no code fences."
+    'nothing else: a tool call such as {"tool":"ls","args":{"path":""}}, or '
+    '{"tool":"submit","args":{"answer":{...}}} to finish. No prose, no code fences.'
 )
 
 
@@ -72,7 +73,7 @@ async def chat(client: httpx.AsyncClient, token: str, messages: list[dict]) -> t
             timeout=120,
         )
         if resp.status_code == 429 or resp.status_code >= 500:
-            await asyncio.sleep(2 ** attempt)
+            await asyncio.sleep(2**attempt)
             continue
         resp.raise_for_status()
         data = resp.json()
@@ -87,9 +88,12 @@ async def play(task_id: str, seed: int, client: httpx.AsyncClient, token: str) -
     obs = env.reset(task_id=task_id, seed=seed)
     messages = [
         {"role": "system", "content": SYSTEM},
-        {"role": "user", "content": json.dumps({"output": obs.output, "ok": True, "calls_left": MAX_CALLS})},
+        {
+            "role": "user",
+            "content": json.dumps({"output": obs.output, "ok": True, "calls_left": MAX_CALLS}),
+        },
     ]
-    record = {
+    record: dict[str, Any] = {
         "task_id": task_id,
         "seed": seed,
         "reward": 0.0,
@@ -122,7 +126,14 @@ async def play(task_id: str, seed: int, client: httpx.AsyncClient, token: str) -
             record["ended"] = "submit" if action_dict.get("tool") == "submit" else "call_cap"
             break
         messages.append({"role": "assistant", "content": reply.strip()})
-        messages.append({"role": "user", "content": json.dumps({"output": obs.output, "ok": obs.ok, "calls_left": obs.calls_left})})
+        messages.append(
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {"output": obs.output, "ok": obs.ok, "calls_left": obs.calls_left}
+                ),
+            }
+        )
     record["solved"] = record["reward"] == 1.0
     return record
 
@@ -160,8 +171,7 @@ def main() -> None:
     parser.add_argument("--concurrency", type=int, default=8)
     parser.add_argument("--seed-base", type=int, default=0, help="0 means random")
     args = parser.parse_args()
-    global FAMILIES
-    FAMILIES = load_families()
+    FAMILIES.update(load_families())
     if args.tasks == "all":
         tasks = [f"{fid}-L{lv}" for fid in sorted(FAMILIES) for lv in FAMILIES[fid].levels]
     else:

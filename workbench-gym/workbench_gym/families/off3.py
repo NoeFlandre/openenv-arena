@@ -19,7 +19,7 @@ from datetime import date, timedelta
 from fractions import Fraction
 
 from ..core.grading import Field
-from .base import Built, Family
+from .base import Built, Family, must_match
 
 COUNTS = {1: 8, 2: 12, 3: 16}
 CUTOFF = "2026-07-01"
@@ -59,12 +59,18 @@ def _money(cents):
     return f"{cents // 100}.{cents % 100:02d}"
 
 
-def _outcome(receipts, rates, rate_key="rdate", stale_caps=False, rounding="half", total_round=False):
+def _outcome(
+    receipts, rates, rate_key="rdate", stale_caps=False, rounding="half", total_round=False
+):
     rejected = []
     total = 0
     exact_total = Fraction(0)
     for r in receipts:
-        rate = Fraction(1) if r["cur"] == "EUR" else Fraction(rates[(_rate_date(r[rate_key]), r["cur"])], 10000)
+        rate = (
+            Fraction(1)
+            if r["cur"] == "EUR"
+            else Fraction(rates[(_rate_date(r[rate_key]), r["cur"])], 10000)
+        )
         exact = Fraction(r["amount"]) * rate * 100
         cents = math.floor(exact + Fraction(1, 2)) if rounding == "half" else math.floor(exact)
         caps = CAPS_BEFORE if stale_caps else _caps(r["rdate"])
@@ -159,14 +165,18 @@ class ExpenseAudit(Family):
 
     def solve(self, files: dict[str, str], question: str) -> dict:
         policy = files["policy.txt"]
-        cutoff = re.search(r"From (\d{4}-\d{2}-\d{2})", policy).group(1)
+        cutoff = must_match(r"From (\d{4}-\d{2}-\d{2})", policy).group(1)
         cats = ("meal", "taxi", "hotel", "train")
-        before_row, from_row = re.findall(r"meal (\d+), taxi (\d+), hotel (\d+), train (\d+)", policy)
-        cap_before = dict(zip(cats, (int(v) * 100 for v in before_row)))
-        cap_from = dict(zip(cats, (int(v) * 100 for v in from_row)))
+        before_row, from_row = re.findall(
+            r"meal (\d+), taxi (\d+), hotel (\d+), train (\d+)", policy
+        )
+        cap_before = dict(zip(cats, (int(v) * 100 for v in before_row), strict=False))
+        cap_from = dict(zip(cats, (int(v) * 100 for v in from_row), strict=False))
         rates = {}
         for row in csv.DictReader(io.StringIO(files["rates.csv"])):
-            rates.setdefault(row["currency"], []).append((row["date"], Fraction(row["eur_per_unit"])))
+            rates.setdefault(row["currency"], []).append(
+                (row["date"], Fraction(row["eur_per_unit"]))
+            )
         rejected = []
         total = 0
         for row in csv.DictReader(io.StringIO(files["receipts.csv"])):

@@ -19,10 +19,32 @@ from .base import Built, Family
 
 MODULES = {1: 6, 2: 10, 3: 14}
 POOL = [
-    "auth", "cart", "db", "api", "tax", "log", "util", "cache", "mail",
-    "orders", "billing", "search", "export", "report", "ui", "jobs", "sync",
-    "hooks", "forms", "rates", "email", "users", "pricing", "stock",
-    "shipping", "tokens",
+    "auth",
+    "cart",
+    "db",
+    "api",
+    "tax",
+    "log",
+    "util",
+    "cache",
+    "mail",
+    "orders",
+    "billing",
+    "search",
+    "export",
+    "report",
+    "ui",
+    "jobs",
+    "sync",
+    "hooks",
+    "forms",
+    "rates",
+    "email",
+    "users",
+    "pricing",
+    "stock",
+    "shipping",
+    "tokens",
 ]
 QUESTION = (
     "changed.txt lists the modules changed in one commit. A test must run when one of its "
@@ -81,8 +103,13 @@ def _instance(n: int, changed_count: int, rng: random.Random):
         ms[selected[0]] += 1
         total += 1
     return {
-        "deps": deps, "tests": tests, "ms": ms, "changed": changed,
-        "selected": selected, "direct": direct, "total": total,
+        "deps": deps,
+        "tests": tests,
+        "ms": ms,
+        "changed": changed,
+        "selected": selected,
+        "direct": direct,
+        "total": total,
     }
 
 
@@ -105,12 +132,12 @@ class TestCoverCost(Family):
         selected, direct, total = inst["selected"], inst["direct"], inst["total"]
         files = {
             "changed.txt": "# modules changed in this commit\n" + "\n".join(inst["changed"]) + "\n",
-            "imports.txt": "# direct internal imports\n" + "\n".join(
-                f"{m}: {' '.join(sorted(deps[m])) or '-'}" for m in sorted(deps)
-            ) + "\n",
-            "tests.txt": "# test file: direct imports | runtime\n" + "\n".join(
-                f"{t}: {' '.join(tests[t])} | {ms[t]} ms" for t in sorted(tests)
-            ) + "\n",
+            "imports.txt": "# direct internal imports\n"
+            + "\n".join(f"{m}: {' '.join(sorted(deps[m])) or '-'}" for m in sorted(deps))
+            + "\n",
+            "tests.txt": "# test file: direct imports | runtime\n"
+            + "\n".join(f"{t}: {' '.join(tests[t])} | {ms[t]} ms" for t in sorted(tests))
+            + "\n",
         }
         decoys = [
             {"tests": direct, "test_cost": sum(ms[t] for t in direct) // 1000},

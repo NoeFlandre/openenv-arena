@@ -42,8 +42,8 @@ GRID = 6000
 MAX_TRIES = 400
 RULES = (
     "Q4 review scheduling. inbox.log has one message per line: date | sender | subject | body.\n"
-    "1. Proposal: subject \"Q4 review slot\", body \"propose <slot>\". "
-    "Reply: subject \"Re: availability\", body \"Q4 review unavailable <slot>\".\n"
+    '1. Proposal: subject "Q4 review slot", body "propose <slot>". '
+    'Reply: subject "Re: availability", body "Q4 review unavailable <slot>".\n'
     "2. A reply counts only if dated after the proposal for its slot.\n"
     "3. A proposal is open unless a counting reply names its slot.\n"
     "4. The meeting takes the open proposal with the latest date.\n"
@@ -87,7 +87,10 @@ class MeetingSlot(Family):
             slots = rng.sample(SLOT_POOL, p)
             times = sorted(rng.sample(range(TIMES), p))
             used = set(times)
-            msgs = [(times[i], rng.choice(SENDERS), "Q4 review slot", f"propose {slots[i]}") for i in range(p)]
+            msgs = [
+                (times[i], rng.choice(SENDERS), "Q4 review slot", f"propose {slots[i]}")
+                for i in range(p)
+            ]
 
             # Every later proposal is voided by a reply dated after it. Some earlier ones are too.
             voided = list(range(a + 1, p)) + [i for i in range(1, a) if rng.random() < 0.5]
@@ -97,7 +100,14 @@ class MeetingSlot(Family):
                 if m is None:
                     ok = False
                     break
-                msgs.append((m, rng.choice(SENDERS), "Re: availability", f"Q4 review unavailable {slots[i]}"))
+                msgs.append(
+                    (
+                        m,
+                        rng.choice(SENDERS),
+                        "Re: availability",
+                        f"Q4 review unavailable {slots[i]}",
+                    )
+                )
             if not ok:
                 continue
 
@@ -105,7 +115,14 @@ class MeetingSlot(Family):
             early = _free(rng, 0, times[a], used)
             if early is None:
                 continue
-            msgs.append((early, rng.choice(SENDERS), "Re: availability", f"Q4 review unavailable {slots[a]}"))
+            msgs.append(
+                (
+                    early,
+                    rng.choice(SENDERS),
+                    "Re: availability",
+                    f"Q4 review unavailable {slots[a]}",
+                )
+            )
 
             board_slot = rng.choice(SLOT_POOL)
             for j in range(BOARD[level]):
@@ -114,9 +131,18 @@ class MeetingSlot(Family):
                     ok = False
                     break
                 if j == 0:
-                    msgs.append((m, rng.choice(SENDERS), "Board prep slot", f"propose {board_slot}"))
+                    msgs.append(
+                        (m, rng.choice(SENDERS), "Board prep slot", f"propose {board_slot}")
+                    )
                 else:
-                    msgs.append((m, rng.choice(SENDERS), "Re: availability", f"Board prep unavailable {rng.choice(SLOT_POOL)}"))
+                    msgs.append(
+                        (
+                            m,
+                            rng.choice(SENDERS),
+                            "Re: availability",
+                            f"Board prep unavailable {rng.choice(SLOT_POOL)}",
+                        )
+                    )
             if not ok:
                 continue
 
@@ -140,7 +166,9 @@ class MeetingSlot(Family):
                 continue
 
             msgs.sort(key=lambda item: item[0])
-            lines = [f"{_stamp(m)} | {sender} | {subject} | {body}" for m, sender, subject, body in msgs]
+            lines = [
+                f"{_stamp(m)} | {sender} | {subject} | {body}" for m, sender, subject, body in msgs
+            ]
             return Built(
                 question=QUESTION,
                 files={"inbox.log": "\n".join(lines) + "\n", "rules.txt": RULES},
@@ -159,9 +187,9 @@ class MeetingSlot(Family):
                 continue
             when, _sender, subject, body = parts
             if subject == "Q4 review slot" and body.startswith("propose "):
-                proposals[body[len("propose "):]] = when
+                proposals[body[len("propose ") :]] = when
             elif subject == "Re: availability" and body.startswith("Q4 review unavailable "):
-                replies.append((body[len("Q4 review unavailable "):], when))
+                replies.append((body[len("Q4 review unavailable ") :], when))
         open_slots = [
             (when, slot)
             for slot, when in proposals.items()

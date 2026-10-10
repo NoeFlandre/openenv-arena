@@ -14,11 +14,10 @@ different answer.
 import csv
 import io
 import random
-import re
 from fractions import Fraction
 
 from ..core.grading import Field
-from .base import Built, Family
+from .base import Built, Family, must_match
 
 COUNTS = {1: 6, 2: 9, 3: 12}
 THRESHOLDS = ("0.2", "0.25", "0.3")
@@ -92,7 +91,7 @@ class CalibrationFit(Family):
             full_a, full_b = _fit(pts)
             res = [Fraction(y) - full_a - full_b * c for c, y in pts]
             span = max(res) - min(res)
-            quarantined = [c for (c, _), r in zip(pts, res) if abs(r) > thr * span]
+            quarantined = [c for (c, _), r in zip(pts, res, strict=False) if abs(r) > thr * span]
             if quarantined != [planted]:
                 continue
             kept = [(c, y) for c, y in pts if c != planted]
@@ -104,7 +103,7 @@ class CalibrationFit(Family):
                 _slope_text(1 / kept_b),
                 _slope_text(_fit([(y, c) for c, y in kept])[1]),
             ]
-            old_kept = [(c, y) for (c, y), r in zip(pts, res) if abs(r) <= OLD_LIMIT]
+            old_kept = [(c, y) for (c, y), r in zip(pts, res, strict=False) if abs(r) <= OLD_LIMIT]
             if len(old_kept) >= 3 and len({c for c, _ in old_kept}) >= 2:
                 candidates.append(_slope_text(_fit(old_kept)[1]))
             decoys = _distinct(candidates, answer)
@@ -132,7 +131,7 @@ class CalibrationFit(Family):
             for name, text in sorted(files.items())
             if name.startswith("sop") and "status: current" in text
         )
-        thr = Fraction(re.search(r"\|residual\| > ([0-9.]+) x span", sop).group(1))
+        thr = Fraction(must_match(r"\|residual\| > ([0-9.]+) x span", sop).group(1))
         runs = [
             (int(row["conc_ppb"]), int(row["counts"]))
             for row in csv.DictReader(io.StringIO(files["standards.csv"]))
@@ -140,7 +139,7 @@ class CalibrationFit(Family):
         a, b = _solve_line(runs)
         res = [Fraction(y) - a - b * x for x, y in runs]
         span = max(res) - min(res)
-        kept = [(x, y) for (x, y), r in zip(runs, res) if abs(r) <= thr * span]
+        kept = [(x, y) for (x, y), r in zip(runs, res, strict=False) if abs(r) <= thr * span]
         _, slope = _solve_line(kept)
         return {"slope": f"{slope.numerator}/{slope.denominator}"}
 

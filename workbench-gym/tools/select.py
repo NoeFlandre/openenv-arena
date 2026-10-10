@@ -48,7 +48,10 @@ def main() -> int:
     families = load_families()
     by_task = load(args.runs)
     kept = []
-    print(f"{'task':10} {'n':>4} {'solved':>6} {'rate':>6} {'invalid':>7} {'trunc':>5} {'tok':>6}  verdict")
+    print(
+        f"{'task':10} {'n':>4} {'solved':>6} {'rate':>6} {'invalid':>7} "
+        f"{'trunc':>5} {'tok':>6}  verdict"
+    )
     for task in sorted(by_task):
         records = by_task[task]
         n = len(records)
@@ -74,7 +77,10 @@ def main() -> int:
             )
         else:
             verdict = "drop (too easy)" if rate > args.hi else "drop (too hard)"
-        print(f"{task:10} {n:4d} {solved:6d} {rate:6.2f} {invalid:7d} {trunc:5d} {tokens:6.0f}  {verdict}")
+        print(
+            f"{task:10} {n:4d} {solved:6d} {rate:6.2f} {invalid:7d} "
+            f"{trunc:5d} {tokens:6.0f}  {verdict}"
+        )
 
     per_domain = collections.Counter(k["domain"] for k in kept)
     print(f"\nkept {len(kept)} tasks across {len(per_domain)} domains")

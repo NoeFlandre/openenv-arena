@@ -48,8 +48,8 @@ class Store:
         for name in self._files:
             if not name.startswith(prefix):
                 continue
-            head = name[len(prefix):].split("/", 1)[0]
-            if "/" in name[len(prefix):]:
+            head = name[len(prefix) :].split("/", 1)[0]
+            if "/" in name[len(prefix) :]:
                 entries.add(head + "/")
             else:
                 entries.add(f"{head} ({len(self._files[name])} chars)")

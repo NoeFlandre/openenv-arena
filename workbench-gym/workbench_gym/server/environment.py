@@ -38,6 +38,8 @@ class WorkbenchEnvironment(Environment):
         self._state = State(episode_id=None, step_count=0)
 
     def reset(self, seed=None, episode_id=None, task_id=None, **kwargs) -> WorkbenchObservation:
+        if not isinstance(task_id, str):
+            raise ValueError("reset needs task_id")
         family_id, level = parse_task_id(task_id)
         family = self._families.get(family_id)
         if family is None or level not in family.levels:
@@ -104,7 +106,9 @@ class WorkbenchEnvironment(Environment):
             raise RuntimeError("call reset(task_id=...) first")
         return self._episode
 
-    def _observation(self, output: str, ok: bool, done: bool, reward: float) -> WorkbenchObservation:
+    def _observation(
+        self, output: str, ok: bool, done: bool, reward: float
+    ) -> WorkbenchObservation:
         ep = self._episode or {}
         return WorkbenchObservation(
             task_id=ep.get("task_id", ""),

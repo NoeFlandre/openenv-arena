@@ -21,9 +21,36 @@ RULE_COUNT = {1: 3, 2: 5, 3: 7}
 USER_COUNT = 6
 ANSWER_LIMIT = 260
 NAMES = (
-    "amy", "bo", "chen", "dara", "eli", "fay", "gus", "hana", "ivo", "jo",
-    "kim", "lea", "max", "nia", "omar", "pia", "quin", "rosa", "sol", "tia",
-    "uma", "vic", "wes", "xan", "yara", "zed", "ada", "ben", "cy", "ned",
+    "amy",
+    "bo",
+    "chen",
+    "dara",
+    "eli",
+    "fay",
+    "gus",
+    "hana",
+    "ivo",
+    "jo",
+    "kim",
+    "lea",
+    "max",
+    "nia",
+    "omar",
+    "pia",
+    "quin",
+    "rosa",
+    "sol",
+    "tia",
+    "uma",
+    "vic",
+    "wes",
+    "xan",
+    "yara",
+    "zed",
+    "ada",
+    "ben",
+    "cy",
+    "ned",
 )
 FIELDS = {
     "role": ("admin", "dev", "viewer"),
@@ -98,9 +125,7 @@ class AuthorizationAudit(Family):
             chosen = rng.sample(POOL, count)
             rules = [(f"R{i + 1}", when, need) for i, (when, need) in enumerate(chosen)]
             names = rng.sample(NAMES, USER_COUNT)
-            reqs = {
-                name: {f: rng.choice(vals) for f, vals in FIELDS.items()} for name in names
-            }
+            reqs = {name: {f: rng.choice(vals) for f, vals in FIELDS.items()} for name in names}
             answer = _audit(reqs, rules)
             if not 1 <= len(answer["allowed"]) <= USER_COUNT - 1:
                 continue
@@ -108,8 +133,9 @@ class AuthorizationAudit(Family):
                 continue
             if answer_size(answer) > ANSWER_LIMIT:
                 continue
-            multi = sum(1 for u in reqs if sum(
-                1 for _, w, n in rules if _fails(reqs[u], w, n)) >= 2)
+            multi = sum(
+                1 for u in reqs if sum(1 for _, w, n in rules if _fails(reqs[u], w, n)) >= 2
+            )
             if multi < 1:
                 continue
             decoys = [

@@ -14,7 +14,7 @@ import random
 import re
 
 from ..core.grading import Field
-from .base import Built, Family
+from .base import Built, Family, must_match
 
 RANGES = {1: (200_000, 1_000_000), 2: (500_000_000, 1_000_000_000), 3: (10**11, 10**12)}
 ORDERS = (2, 3, 4)
@@ -128,8 +128,8 @@ class LinearRecurrenceMod(Family):
         coeffs = [0] * len(terms)
         for sign, digits, j in terms:
             coeffs[int(j) - 1] = int(sign + digits)
-        mod = int(re.search(r"\bM\s*=\s*(\d+)", text).group(1))
-        index = int(re.search(r"\bN\s*=\s*(\d+)", text).group(1))
+        mod = int(must_match(r"\bM\s*=\s*(\d+)", text).group(1))
+        index = int(must_match(r"\bN\s*=\s*(\d+)", text).group(1))
         return {"value": nth_term(init, coeffs, index, mod)}
 
 

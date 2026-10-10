@@ -120,7 +120,8 @@ class TankOverflow(Family):
                 "Inflow valves: AUTO follow valve_steps.csv. OVR = manual override.\n"
                 f"IL80 interlock trips when the level reaches {int(TRIP * 100)}% of capacity, "
                 "in any step, and latches.\n"
-                "A trip closes all AUTO inflow for the rest of the run. OVR valves stay as commanded.\n"
+                "A trip closes all AUTO inflow for the rest of the run. "
+                "OVR valves stay as commanded.\n"
                 "Overflow: first moment the level reaches capacity while inflow is open.\n"
                 "Report the overflow time in whole seconds, rounded up; -1 if there is none.\n"
             )
@@ -159,7 +160,9 @@ class TankOverflow(Family):
         for row in files["valve_steps.csv"].strip().split("\n")[1:]:
             _, start, end, inflow, valve = row.split(",")
             steps.append((int(start), int(end), int(inflow), valve))
-        return {"overflow_s": _first_overflow(cap, level0, drain, steps, trip=Fraction(trip_pct, 100))}
+        return {
+            "overflow_s": _first_overflow(cap, level0, drain, steps, trip=Fraction(trip_pct, 100))
+        }
 
 
 FAMILY = TankOverflow()

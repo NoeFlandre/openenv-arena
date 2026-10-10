@@ -11,6 +11,7 @@ only the text. The gates check that the two agree on every seed.
 """
 
 import random
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -37,3 +38,11 @@ class Family:
 
     def solve(self, files: dict[str, str], question: str) -> dict[str, Any]:
         raise NotImplementedError
+
+
+def must_match(pattern: str, text: str, flags: int = 0) -> re.Match[str]:
+    """Search ``text`` for ``pattern``. A missing match is a bug in the family, so raise."""
+    match = re.search(pattern, text, flags)
+    if match is None:
+        raise ValueError(f"no match for {pattern!r}")
+    return match

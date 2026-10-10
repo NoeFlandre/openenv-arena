@@ -30,7 +30,7 @@ def _product(mass, purity, mw_a, mw_f, steps):
 
 
 def _dec(value: int, places: int) -> str:
-    whole, frac = divmod(value, 10 ** places)
+    whole, frac = divmod(value, 10**places)
     return f"{whole}.{frac:0{places}d}"
 
 
@@ -59,7 +59,7 @@ class PurityYield(Family):
             purity = Fraction(purity_t, 1000)
             mw_a = Fraction(mw_a_c, 100)
             mw_f = Fraction(mw_f_c, 100)
-            steps = [(r, Fraction(y, 1000)) for r, y in zip(ratios, yields_t)]
+            steps = [(r, Fraction(y, 1000)) for r, y in zip(ratios, yields_t, strict=False)]
             want = _product(mass, purity, mw_a, mw_f, steps)
             candidates = [
                 _product(mass, Fraction(1), mw_a, mw_f, steps),
@@ -83,10 +83,13 @@ class PurityYield(Family):
                 f"MW(F): {_dec(mw_f_c, 2)} g/mol\n"
             )
             route = [f"Route: A to F in {n} steps. Ratio = mol out per mol in."]
-            for k, (ratio, y) in enumerate(zip(ratios, yields_t), start=1):
+            for k, (ratio, y) in enumerate(zip(ratios, yields_t, strict=False), start=1):
                 route.append(f"Step {k}: ratio {_dec(int(ratio * 10), 1)}, yield {_dec(y, 1)} %")
             return Built(
-                question="Starting from the weighed sample, how many grams of product F does the route deliver?",
+                question=(
+                    "Starting from the weighed sample, "
+                    "how many grams of product F does the route deliver?"
+                ),
                 files={"sample.txt": sample, "steps.txt": "\n".join(route) + "\n"},
                 fields={"grams": Field("number", rel_tol=0.01)},
                 answer={"grams": float(want)},
@@ -102,7 +105,9 @@ class PurityYield(Family):
         mw_f = Fraction(_grab(r"MW\(F\):\s*([\d.]+) g/mol", sample))
         steps = [
             (Fraction(ratio), Fraction(y) / 100)
-            for ratio, y in re.findall(r"Step \d+: ratio ([\d.]+), yield ([\d.]+) %", files["steps.txt"])
+            for ratio, y in re.findall(
+                r"Step \d+: ratio ([\d.]+), yield ([\d.]+) %", files["steps.txt"]
+            )
         ]
         return {"grams": float(_product(mass, purity, mw_a, mw_f, steps))}
 

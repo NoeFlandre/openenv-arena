@@ -19,14 +19,32 @@ import random
 import re
 
 from ..core.grading import Field
-from .base import Built, Family
+from .base import Built, Family, must_match
 
 TABLE_PATHS = [
-    "src/rates.py", "src/vat.py", "src/pricing/rates.py",
-    "src/tax/table.py", "src/config/rates.py",
+    "src/rates.py",
+    "src/vat.py",
+    "src/pricing/rates.py",
+    "src/tax/table.py",
+    "src/config/rates.py",
 ]
 PREFIXES = [
-    "EU", "US", "CA", "AU", "NZ", "JP", "KR", "IN", "BR", "MX", "CH", "NO", "SE", "FI", "DK", "PL",
+    "EU",
+    "US",
+    "CA",
+    "AU",
+    "NZ",
+    "JP",
+    "KR",
+    "IN",
+    "BR",
+    "MX",
+    "CH",
+    "NO",
+    "SE",
+    "FI",
+    "DK",
+    "PL",
 ]
 SUFFIXES = ["AT", "BE", "CA", "DE", "NY", "ON"]
 CODES = [f"{p}-{s}" for p in PREFIXES for s in SUFFIXES]
@@ -46,7 +64,7 @@ def _hash(rng: random.Random) -> str:
 
 def _table_lines(names: list[str], values: list[float]) -> list[str]:
     lines = ["# VAT rate by region code", "RATES = {"]
-    for key, value in zip(names, values):
+    for key, value in zip(names, values, strict=False):
         lines.append(f'    "{key}": {value:.2f},')
     lines += ["}", "", "def vat_rate(region):", "    return RATES[region]"]
     return lines
@@ -67,8 +85,8 @@ class IntroducedBug(Family):
     def build(self, level: int, rng: random.Random) -> Built:
         tp = rng.choice(TABLE_PATHS)
         n = rng.randint(15, 16)
-        keys = rng.sample(CODES, n)                                  # codes before the cleanup
-        fresh = rng.sample([c for c in CODES if c not in keys], n)   # codes after it
+        keys = rng.sample(CODES, n)  # codes before the cleanup
+        fresh = rng.sample([c for c in CODES if c not in keys], n)  # codes after it
         values = [rng.choice(RATE_CHOICES) for _ in keys]
         t_pos = rng.randrange(n)
         others = [i for i in range(n) if i != t_pos]
@@ -88,10 +106,17 @@ class IntroducedBug(Family):
         chains = []
         for i in range(n):
             if i == t_pos:
-                chains.append([
-                    (tp, f'"{target}": {prev_target:.2f}', f'"{target}": {v:.2f}', "VAT update"),
-                    (tp, f'"{target}"', f'"{new_target}"', RENAME_MSG),
-                ])
+                chains.append(
+                    [
+                        (
+                            tp,
+                            f'"{target}": {prev_target:.2f}',
+                            f'"{target}": {v:.2f}',
+                            "VAT update",
+                        ),
+                        (tp, f'"{target}"', f'"{new_target}"', RENAME_MSG),
+                    ]
+                )
                 continue
             chain = []
             if i in rate_rows:
@@ -111,8 +136,10 @@ class IntroducedBug(Family):
             cut_at = next(
                 i for i, c in enumerate(seq) if c[1] == f'"{target}"' and c[2] == f'"{new_target}"'
             )
-            seq.insert(rng.randint(cut_at + 1, len(seq)),
-                       (legacy_path, f'"{target}"', f'"{new_target}"', RENAME_MSG))
+            seq.insert(
+                rng.randint(cut_at + 1, len(seq)),
+                (legacy_path, f'"{target}"', f'"{new_target}"', RENAME_MSG),
+            )
             built_files["src/checkout.py"] = (
                 "def total(item, region):\n"
                 "    rate = vat_rate(region)\n"
@@ -165,7 +192,7 @@ class IntroducedBug(Family):
         )
 
     def solve(self, files: dict[str, str], question: str) -> dict:
-        key = re.search(r"KeyError: '([^']+)'", files["crash.txt"]).group(1)
+        key = must_match(r"KeyError: '([^']+)'", files["crash.txt"]).group(1)
         line_re = re.compile(r"^\S+ (\S+)  (.+?) -> (.+?)  # ")
         found = None
         for line in files["history.txt"].split("\n"):
@@ -176,7 +203,7 @@ class IntroducedBug(Family):
             if not path.startswith("src/"):
                 continue
             if f'"{key}"' in old and f'"{key}"' not in new:
-                found = (path, re.search(r'"([^"]+)"', new).group(1))
+                found = (path, must_match(r'"([^"]+)"', new).group(1))
         if found is None:
             return {"location": ""}
         path, code = found

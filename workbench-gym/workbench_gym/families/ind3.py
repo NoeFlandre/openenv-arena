@@ -90,8 +90,10 @@ class TelemetryErratum(Family):
             csv_lines = ["timestamp,sensor,temp_C"]
             csv_lines += [f"{_stamp(k)},{sensor},{v // 10}.{v % 10}" for k, sensor, v in rows]
             events = []
-            for (s, e), reason in zip(wins, [rng.choice(REASONS) for _ in wins]):
-                events.append((s, f"VOID T3 from {_stamp(s)} to {_stamp(e)}, end excluded: {reason}"))
+            for (s, e), reason in zip(wins, [rng.choice(REASONS) for _ in wins], strict=False):
+                events.append(
+                    (s, f"VOID T3 from {_stamp(s)} to {_stamp(e)}, end excluded: {reason}")
+                )
             note = rng.randrange(N_T3)
             events.append((note, f"NOTE {_stamp(note)} T2 zero check passed, no action"))
             events.sort()
@@ -126,7 +128,7 @@ class TelemetryErratum(Family):
             if any(start <= stamp < end for start, end in voids):
                 continue
             kept.append(Fraction(value))
-        return {"mean": _fmt(sum(kept) / len(kept))}
+        return {"mean": _fmt(sum(kept, Fraction(0)) / len(kept))}
 
 
 FAMILY = TelemetryErratum()
