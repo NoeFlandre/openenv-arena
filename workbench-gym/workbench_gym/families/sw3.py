@@ -5,11 +5,14 @@ sw3: introduced bug (software engineering).
 
 ``crash.txt`` is a traceback from a deployed build. Its last frame is where the
 KeyError surfaces, in the rate table, and the frame above it is the caller in
-checkout. ``history.txt`` lists commits, oldest first, each changing one line
-in place. Only src/ is deployed. The answer is the path and line of the
-change that broke the key the crash looks up, in a commit under src/.
-The traps: the traceback names the caller and the crash site, a legacy copy
-carries the same typo, and another key was broken by an unrelated commit.
+checkout. ``history.txt`` lists commits, oldest first, and only src/ is deployed.
+Every row of the table was renamed by a "tidy" commit, so the current
+table alone cannot say which row the crashing code became: the new code is only
+in history.txt. The answer is one text field, "path:line": path is the src/ file
+the bug commit changed (as written in history.txt), and line is the row of the
+new code in that file's current table.
+Traps: the traceback names the caller and the crash site, a legacy copy carries
+the same rename, and other codes were renamed by unrelated commits.
 """
 
 import random
@@ -22,28 +25,28 @@ TABLE_PATHS = [
     "src/rates.py", "src/vat.py", "src/pricing/rates.py",
     "src/tax/table.py", "src/config/rates.py",
 ]
-KEYS = [
-    "EU-AT", "EU-BE", "EU-DE", "EU-DK", "EU-ES", "EU-FI", "EU-FR", "EU-GR",
-    "EU-IE", "EU-IT", "EU-NL", "EU-PL", "EU-PT", "EU-SE", "EU-SI", "US-CA",
-    "US-NY", "US-TX", "US-WA", "US-FL", "CA-ON", "CA-QC", "CA-BC", "AU-NSW",
-    "AU-VIC", "NZ-AUK", "JP-13", "KR-11", "IN-MH", "BR-SP", "MX-CMX",
+PREFIXES = [
+    "EU", "US", "CA", "AU", "NZ", "JP", "KR", "IN", "BR", "MX", "CH", "NO", "SE", "FI", "DK", "PL",
 ]
+SUFFIXES = ["AT", "BE", "CA", "DE", "NY", "ON"]
+CODES = [f"{p}-{s}" for p in PREFIXES for s in SUFFIXES]
 RATE_CHOICES = [0.05, 0.07, 0.08, 0.10, 0.13, 0.17, 0.19, 0.20, 0.21, 0.24, 0.25, 0.27]
 FUNCS = ["add", "merge", "count", "split", "pack"]
 QUESTION = (
-    "crash.txt is a traceback from a deployed build. Using history.txt, which file and line "
-    "did the commit that introduced this bug change? Give the path as written in history.txt "
-    "and the line number."
+    "crash.txt is a traceback from a deployed build. history.txt lists the commits. Which commit "
+    "introduced this bug? Answer location as path:line: the path as written in history.txt, and "
+    "the line of that row in the current table."
 )
+RENAME_MSG = "tidy"
 
 
 def _hash(rng: random.Random) -> str:
     return "".join(rng.choice("0123456789abcdef") for _ in range(7))
 
 
-def _table_lines(head_keys: list[str], values: list[float]) -> list[str]:
+def _table_lines(names: list[str], values: list[float]) -> list[str]:
     lines = ["# VAT rate by region code", "RATES = {"]
-    for key, value in zip(head_keys, values):
+    for key, value in zip(names, values):
         lines.append(f'    "{key}": {value:.2f},')
     lines += ["}", "", "def vat_rate(region):", "    return RATES[region]"]
     return lines
@@ -63,72 +66,81 @@ class IntroducedBug(Family):
 
     def build(self, level: int, rng: random.Random) -> Built:
         tp = rng.choice(TABLE_PATHS)
-        n = rng.randint(7, 12)
-        keys = rng.sample(KEYS, n)
+        n = rng.randint(15, 16)
+        keys = rng.sample(CODES, n)                                  # codes before the cleanup
+        fresh = rng.sample([c for c in CODES if c not in keys], n)   # codes after it
         values = [rng.choice(RATE_CHOICES) for _ in keys]
         t_pos = rng.randrange(n)
-        target = keys[t_pos]
-        typo1 = target[:-1]
-        options = [
-            i for i in range(n)
-            if i != t_pos and keys[i][:-1] not in keys and keys[i][:-1] != typo1
-        ]
-        o_pos = rng.choice(options)
-        typo2 = keys[o_pos][:-1]
-        o2 = rng.choice([i for i in range(n) if i not in (t_pos, o_pos)])
-        prev_target = rng.choice([v for v in RATE_CHOICES if v != values[t_pos]])
-        prev_o2 = rng.choice([v for v in RATE_CHOICES if v != values[o2]])
-        head_keys = list(keys)
-        head_keys[t_pos] = typo1
-        head_keys[o_pos] = typo2
-        table = _table_lines(head_keys, values)
-        crash_line = len(table)
-        caller_line = rng.randint(4, 8)
-        legacy_path = "legacy/" + tp
-        table_text = "\n".join(table) + "\n"
-        target_line = 3 + t_pos
+        others = [i for i in range(n) if i != t_pos]
+        o_pos = rng.choice(others)
+        target, new_target = keys[t_pos], fresh[t_pos]
         v = values[t_pos]
+        prev_target = rng.choice([x for x in RATE_CHOICES if x != v])
+        rate_rows = set(rng.sample(others, 1))
+        target_line = 3 + t_pos
+        table_lines = _table_lines(fresh, values)
+        table_text = "\n".join(table_lines) + "\n"
+        crash_line = len(table_lines)
+        caller_line = 2
 
-        val_commit = (tp, target_line, f'"{target}": {prev_target:.2f}', f'"{target}": {v:.2f}', "VAT update")
-        culprit = (tp, target_line, f'"{target}": {v:.2f}', f'"{typo1}": {v:.2f}', "tidy codes")
-        legacy = (legacy_path, target_line, f'"{target}": {v:.2f}', f'"{typo1}": {v:.2f}', "tidy codes")
-        typo_commit = (
-            tp, 3 + o_pos, f'"{keys[o_pos]}": {values[o_pos]:.2f}',
-            f'"{typo2}": {values[o_pos]:.2f}', "tidy codes",
-        )
-        rate_commit = (tp, 3 + o2, f'"{keys[o2]}": {prev_o2:.2f}', f'"{keys[o2]}": {values[o2]:.2f}', "rate fix")
+        # One chain per row: an optional rate fix, then the rename. The target's chain
+        # starts with a VAT update that changes its value, not its code.
+        chains = []
+        for i in range(n):
+            if i == t_pos:
+                chains.append([
+                    (tp, f'"{target}": {prev_target:.2f}', f'"{target}": {v:.2f}', "VAT update"),
+                    (tp, f'"{target}"', f'"{new_target}"', RENAME_MSG),
+                ])
+                continue
+            chain = []
+            if i in rate_rows:
+                prev = rng.choice([x for x in RATE_CHOICES if x != values[i]])
+                chain.append(
+                    (tp, f'"{keys[i]}": {prev:.2f}', f'"{keys[i]}": {values[i]:.2f}', "rate fix")
+                )
+            chain.append((tp, f'"{keys[i]}"', f'"{fresh[i]}"', RENAME_MSG))
+            chains.append(chain)
+        rng.shuffle(chains)
+        seq = [c for chain in chains for c in chain]
 
-        checkout_lines = (
-            ["def total(item, region):"]
-            + [f"    # step {i}" for i in range(2, caller_line)]
-            + ["    rate = vat_rate(region)", "    return item.price * (1 + rate)"]
-        )
-        checkout_text = "\n".join(checkout_lines) + "\n"
         built_files = {tp: table_text}
-        rest = [legacy, typo_commit, rate_commit]
         if level >= 2:
-            rest.append(("src/checkout.py", caller_line, "    rate = vat_rate(item.region)",
-                         "    rate = vat_rate(region)", "pass region"))
-            head, text, old = _small_module(rng)
-            built_files["src/checkout.py"] = checkout_text
-            built_files["src/cart.py"] = text
+            legacy_path = "legacy/" + tp
             built_files[legacy_path] = table_text
-            rest.append(("src/cart.py", 1, old, head, "qty"))
+            cut_at = next(
+                i for i, c in enumerate(seq) if c[1] == f'"{target}"' and c[2] == f'"{new_target}"'
+            )
+            seq.insert(rng.randint(cut_at + 1, len(seq)),
+                       (legacy_path, f'"{target}"', f'"{new_target}"', RENAME_MSG))
+            built_files["src/checkout.py"] = (
+                "def total(item, region):\n"
+                "    rate = vat_rate(region)\n"
+                "    return item.price * (1 + rate)\n"
+            )
+            head, text, old = _small_module(rng)
+            built_files["src/cart.py"] = text
+            pass_region = (
+                "src/checkout.py",
+                "    rate = vat_rate(item.region)",
+                "    rate = vat_rate(region)",
+                "pass region",
+            )
+            seq.insert(rng.randint(0, len(seq)), pass_region)
+            seq.insert(rng.randint(0, len(seq)), ("src/cart.py", old, head, "qty"))
         if level >= 3:
             for path in ("src/util.py", "src/log.py"):
                 head, text, old = _small_module(rng)
                 built_files[path] = text
-                rest.append((path, 1, old, head, "qty"))
+                seq.insert(rng.randint(0, len(seq)), (path, old, head, "qty"))
             built_files["src/api.py"] = "def handle(req):\n    return req\n"
-        rng.shuffle(rest)
-        seq = [val_commit] + rest
-        seq.insert(rng.randint(1, len(seq)), culprit)
 
         history = ["# git log -p, oldest first; only src/ is deployed"]
-        for path, line, old, new, msg in seq:
-            history.append(f"{_hash(rng)} {path}:{line}  {old} -> {new}  # {msg}")
+        for path, old, new, msg in seq:
+            history.append(f"{_hash(rng)} {path}  {old.strip()} -> {new.strip()}  # {msg}")
+
         crash = (
-            "Deploy 2026-10-09 22:14 failed on the first checkout request.\n"
+            "Deploy 2026-10-09 22:14 failed.\n"
             "Traceback (most recent call last):\n"
             f'  File "src/checkout.py", line {caller_line}, in total\n'
             "    rate = vat_rate(region)\n"
@@ -138,33 +150,40 @@ class IntroducedBug(Family):
         )
         built_files["crash.txt"] = crash
         built_files["history.txt"] = "\n".join(history) + "\n"
+        legacy_decoy = f"legacy/{tp}:{target_line}" if level >= 2 else f"{tp}:{target_line + 1}"
         return Built(
             question=QUESTION,
             files=built_files,
-            fields={"path": Field("text"), "line": Field("int")},
-            answer={"path": tp, "line": target_line},
+            fields={"location": Field("text")},
+            answer={"location": f"{tp}:{target_line}"},
             decoys=[
-                {"path": tp, "line": crash_line},
-                {"path": "src/checkout.py", "line": caller_line},
-                {"path": legacy_path, "line": target_line},
-                {"path": tp, "line": 3 + o_pos},
+                {"location": f"{tp}:{crash_line}"},
+                {"location": f"{tp}:{3 + o_pos}"},
+                {"location": f"src/checkout.py:{caller_line}"},
+                {"location": legacy_decoy},
             ],
         )
 
     def solve(self, files: dict[str, str], question: str) -> dict:
         key = re.search(r"KeyError: '([^']+)'", files["crash.txt"]).group(1)
-        pattern = re.compile(r"^\S+\s+([^:\s]+):(\d+)\s+(.*?)\s->\s(.*?)\s+#")
-        found = {"path": "", "line": 0}
+        line_re = re.compile(r"^\S+ (\S+)  (.+?) -> (.+?)  # ")
+        found = None
         for line in files["history.txt"].split("\n"):
-            match = pattern.match(line)
+            match = line_re.match(line)
             if not match:
                 continue
-            path, number, old, new = match.group(1), int(match.group(2)), match.group(3), match.group(4)
+            path, old, new = match.groups()
             if not path.startswith("src/"):
                 continue
-            if f'"{key}":' in old and f'"{key}":' not in new:
-                found = {"path": path, "line": number}
-        return found
+            if f'"{key}"' in old and f'"{key}"' not in new:
+                found = (path, re.search(r'"([^"]+)"', new).group(1))
+        if found is None:
+            return {"location": ""}
+        path, code = found
+        for number, text in enumerate(files[path].split("\n"), start=1):
+            if f'"{code}":' in text:
+                return {"location": f"{path}:{number}"}
+        return {"location": ""}
 
 
 FAMILY = IntroducedBug()

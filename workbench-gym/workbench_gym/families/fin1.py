@@ -11,7 +11,9 @@ does not count toward the cap, so later reversals are still checked.
 
 Decoys are the realistic misreadings: partial application up to the cap,
 stopping at the first rejection, ignoring the cap, and applying the cap to each
-reversal alone.
+reversal alone. The builder redraws any instance where the reversal-alone or the
+stop-at-first-rejection reading gives the true answer, at every level, so those
+two readings always score below 1.0.
 """
 
 import random
@@ -118,6 +120,12 @@ class HeldReversals(Family):
         want_close, want_rej = _post(entries, opening, cap, "held")
         if not want_rej or len(want_rej) == n_rev:
             return None
+        # The one-at-a-time reading (rule 2 applied to each reversal alone) and the
+        # stop-at-first-rejection reading (rule 5 ignored) must not give the true
+        # answer. An instance where either does is redrawn.
+        for rule in ("alone", "stop"):
+            if _post(entries, opening, cap, rule) == (want_close, want_rej):
+                return None
         decoys: list[dict] = []
         for rule in ("partial", "stop", "ignore_cap", "alone"):
             close, rej = _post(entries, opening, cap, rule)
@@ -144,7 +152,8 @@ class HeldReversals(Family):
             "3. Entries are processed in file order.\n"
             "4. A reversal that would take accepted reversals above the cap is held and "
             "rejected in full. It is never partly applied.\n"
-            "5. A rejected reversal does not count toward the cap. Later reversals are still checked.\n"
+            "5. A rejected reversal does not count toward the cap. "
+            "Later reversals are still checked.\n"
             "6. CHARGE and PAYMENT lines always post.\n"
         )
         return Built(

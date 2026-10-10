@@ -9,6 +9,11 @@ copies. Exactly one shipped file holds an exploitable flaw. Legacy copies carry
 flaws of their own, so a search that ignores what ships finds a legacy file
 first (the trap).
 
+Every shipped file also holds one safe use of a generic dangerous API (see
+DECOYS): a constant shell command, a key-prefix check, or a helper named
+"unverified...". A first-hit search over the shipped code lands on one of these,
+so the reader has to check the use, not the name.
+
 Decoys: a legacy copy (the trap), the shipped file with another CWE, and the
 same CWE in another shipped file.
 """
@@ -52,9 +57,7 @@ def read_report(name):
         return fh.read()
 """
 SAFE_22 = """import os
-
 REPORT_DIR = "/srv/reports"
-
 
 def read_report(name):
     path = os.path.realpath(os.path.join(REPORT_DIR, name))
@@ -161,9 +164,7 @@ def fetch_preview(url):
 """
 SAFE_918 = """import urllib.parse
 import urllib.request
-
 ALLOWED_HOSTS = {"img.example.com"}
-
 
 def fetch_preview(url):
     if urllib.parse.urlparse(url).hostname not in ALLOWED_HOSTS:
@@ -184,11 +185,34 @@ TEMPLATES = {
     "CWE-918": (VULN_918, SAFE_918, "def fetch_preview(url):\n    return urllib"),
 }
 
+# One safe decoy per shipped path: (import it needs or None, code). Each decoy
+# calls a generic dangerous API only on constant data, or names a helper
+# "unverified...". Every version of a file (vulnerable or safe) gets its decoy, so
+# the decoy says nothing about which file is the flaw. lib/net.py always holds an
+# os.system() decoy, so a first-hit search over the shipped files answers lib/net.py.
+DECOYS = {
+    "lib/net.py": ("import os", 'def flush_routes():\n    os.system("ip route flush cache")\n'),
+    "lib/session.py": ("import os", 'def flush_to_disk():\n    os.system("sync")\n'),
+    "services/web/app.py": (None, "def unverified_emails(users):\n    return [u.email for u in users if not u.verified]\n"),
+    "services/web/store.py": (None, "def unverified(rows):\n    return [r for r in rows if not r.verified]\n"),
+    "services/worker/export.py": (None, 'def is_live_key(key):\n    return key.startswith("sk_live_")\n'),
+    "services/worker/jobs.py": ("import os", 'def log_start():\n    os.system("logger -t jobs started")\n'),
+}
+
 
 def _mirror(path: str) -> str:
     """Where the old copy of a shipped file lives, under legacy/."""
     tail = path[len("services/"):] if path.startswith("services/") else path
     return "legacy/" + tail
+
+
+def _ship(text: str, path: str) -> str:
+    """A shipped file: a template plus the path's safe decoy. Legacy copies get no decoy."""
+    needed, body = DECOYS[path]
+    head = text.rstrip("\n")
+    if needed and needed not in head.split("\n"):
+        head = needed + "\n" + head
+    return head + "\n\n" + body
 
 
 class DeployedFlaw(Family):
@@ -202,9 +226,9 @@ class DeployedFlaw(Family):
         files = {"Dockerfile": DOCKERFILE, "README.md": README}
         for path in sorted(SHIPPED):
             if path == flaw_file:
-                files[path] = TEMPLATES[flaw_cwe][0]
+                files[path] = _ship(TEMPLATES[flaw_cwe][0], path)
             else:
-                files[path] = TEMPLATES[rng.choice(SHIPPED[path])][1]
+                files[path] = _ship(TEMPLATES[rng.choice(SHIPPED[path])][1], path)
 
         decoys: list[dict] = []
         for path in rng.sample(sorted(SHIPPED), LEGACY_COUNT[level]):

@@ -5,11 +5,17 @@ math3: first wrong step in an algebra chain (mathematics-or-formal-reasoning).
 
 ``worksheet.txt`` is a chain of polynomial steps. Each line applies one operation
 to the previous line's right side and claims the result equals the new right
-side for all x. Some instances hide a sign-only error: one coefficient of a
-right side has the wrong sign, so its magnitudes look right. Lines carry random
-three-digit labels, not positions, so the answer is a label. Later lines build on
-the wrong right side, so only the first false claim is the answer. Decoys: the
-line position, the neighbouring label, a later error's label, and zero.
+side for all x. One instance in ``NO_ERROR_ONE_IN`` has no error. Otherwise the
+first wrong line has one realistic slip: a sign-only error (one coefficient has
+the wrong sign), a dropped term, or a wrong exponent. Later lines build on the
+wrong right side, so only the first false claim is the answer.
+
+Most correct right sides carry an inner minus sign (``x^2 - 3x + 1``), so a rule
+that answers with the first right side that has a minus sign lands on a correct
+line. Lines carry random three-digit labels, not positions, so the answer is a
+label. Line counts start at 16, so no fixed position (first or last line) is the
+answer for more than about 10% of instances. Decoys: the line position,
+the neighbouring label, a later error's label, and zero.
 """
 
 import random
@@ -18,9 +24,13 @@ import re
 from ..core.grading import Field
 from .base import Built, Family
 
-LINE_COUNT = {1: 4, 2: 6, 3: 8}
+LINE_COUNT = {1: 16, 2: 18, 3: 20}
 START_CHOICES = (1, 2)
 NO_ERROR_ONE_IN = 20
+MAX_COEF = 12
+# A correct step whose right side has no inner minus sign is re-rolled this often.
+RE_ROLL_PLAIN = 0.9
+ERRORS = ("sign", "drop", "exponent")
 LINE = re.compile(r"^s(\d+): \((.*?)\)([*+-])\((.*?)\) = (.*)$")
 
 
@@ -80,6 +90,11 @@ def _parse(text):
     return _clean(out)
 
 
+def _inner_minus(poly):
+    """True when a minus sign follows the first term, as in ``x^2 - 3x + 1``."""
+    return "-" in _fmt(poly)[1:]
+
+
 def _random_start(rng):
     deg = rng.choice(START_CHOICES)
     poly = {d: rng.randint(-5, 5) for d in range(deg)}
@@ -88,27 +103,57 @@ def _random_start(rng):
 
 
 def _random_op(current, rng):
-    """Return (operator, factor text, result). The result is never the zero polynomial."""
+    """Return (operator, factor text, result) for one correct step.
+
+    The result is never the zero polynomial and keeps every coefficient within
+    MAX_COEF. Most results have an inner minus sign.
+    """
     while True:
         if max(current) < 3 and rng.random() < 0.5:
             c = rng.choice([-4, -3, -2, -1, 1, 2, 3, 4])
             factor = {1: 1, 0: c}
-            result = _mul(current, factor)
-            if result:
-                return "*", _fmt(factor), result
+            op, factor_text, result = "*", _fmt(factor), _mul(current, factor)
+        else:
+            sign = rng.choice([1, -1])
+            term = {rng.choice([0, 1, 2]): rng.randint(1, 6)}
+            op = "+" if sign > 0 else "-"
+            factor_text, result = _fmt(term), _add(current, term, sign)
+        if not result or max(abs(c) for c in result.values()) > MAX_COEF:
             continue
-        sign = rng.choice([1, -1])
-        term = {rng.choice([0, 1, 2]): rng.randint(1, 6)}
-        result = _add(current, term, sign)
-        if result:
-            return ("+" if sign > 0 else "-"), _fmt(term), result
+        if not _inner_minus(result) and rng.random() < RE_ROLL_PLAIN:
+            continue
+        return op, factor_text, result
 
 
-def _flip_sign(poly, rng):
-    deg = rng.choice(sorted(poly))
-    out = dict(poly)
-    out[deg] = -out[deg]
-    return out
+def _fits(poly):
+    return bool(poly) and max(abs(c) for c in poly.values()) <= MAX_COEF
+
+
+def _wrong_rhs(true_rhs, rng):
+    """Return (slip kind, wrong right side) for one realistic copying slip.
+
+    A wrong exponent may land on a degree that already has a term, so the two
+    combine, as they would when a copied power is merged into like terms.
+    """
+    kinds = list(ERRORS)
+    rng.shuffle(kinds)
+    for kind in kinds:
+        options = []
+        for deg in sorted(true_rhs):
+            if kind == "sign":
+                options.append(_clean({**true_rhs, deg: -true_rhs[deg]}))
+            elif kind == "drop" and len(true_rhs) > 1:
+                options.append(_clean({d: c for d, c in true_rhs.items() if d != deg}))
+            elif kind == "exponent":
+                for new in range(4):
+                    if new != deg:
+                        moved = {d: c for d, c in true_rhs.items() if d != deg}
+                        moved[new] = moved.get(new, 0) + true_rhs[deg]
+                        options.append(_clean(moved))
+        options = [poly for poly in options if _fits(poly)]
+        if options:
+            return kind, rng.choice(options)
+    raise AssertionError("no slip available for this right side")
 
 
 class SignChainCheck(Family):
@@ -130,7 +175,7 @@ class SignChainCheck(Family):
         rendered: list[str] = []
         for k in range(n):
             op, factor_text, true_rhs = _random_op(current, rng)
-            written = _flip_sign(true_rhs, rng) if k in wrong else true_rhs
+            written = _wrong_rhs(true_rhs, rng)[1] if k in wrong else true_rhs
             rendered.append(f"s{labels[k]}: ({_fmt(current)}){op}({factor_text}) = {_fmt(written)}")
             current = written
 
