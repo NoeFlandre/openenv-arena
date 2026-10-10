@@ -83,7 +83,7 @@ async def chat(client: httpx.AsyncClient, token: str, messages: list[dict]) -> t
 
 
 async def play(task_id: str, seed: int, client: httpx.AsyncClient, token: str) -> dict:
-    env = WorkbenchEnvironment(families=FAMILIES)
+    env = WorkbenchEnvironment(families=FAMILIES, allow_seed=True)
     obs = env.reset(task_id=task_id, seed=seed)
     messages = [
         {"role": "system", "content": SYSTEM},

@@ -31,16 +31,27 @@ MEMORY_BYTES = 512 * 1024 * 1024
 FILE_BYTES = 1024 * 1024
 NOBODY_UID = 65534
 NOBODY_GID = 65534
+MAX_PROCESSES = 64
 
 
 def _limits() -> None:
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     resource.setrlimit(resource.RLIMIT_CPU, (CPU_SECONDS, CPU_SECONDS + 1))
     resource.setrlimit(resource.RLIMIT_AS, (MEMORY_BYTES, MEMORY_BYTES))
     resource.setrlimit(resource.RLIMIT_FSIZE, (FILE_BYTES, FILE_BYTES))
     resource.setrlimit(resource.RLIMIT_NOFILE, (32, 32))
+    resource.setrlimit(resource.RLIMIT_NPROC, (MAX_PROCESSES, MAX_PROCESSES))
     if os.geteuid() == 0:
         os.setgid(NOBODY_GID)
         os.setuid(NOBODY_UID)
+
+
+def _kill_group(pgid: int) -> None:
+    """Kill every process the call started, including children that outlived it."""
+    try:
+        os.killpg(pgid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
 
 
 def run_python(lines: object, files: dict[str, str]) -> str:
@@ -68,19 +79,27 @@ def run_python(lines: object, files: dict[str, str]) -> str:
             fh.write("\n".join(lines) + "\n")
         os.chmod(script, 0o444)
         env = {"PATH": "/usr/bin:/bin", "HOME": work, "PYTHONHASHSEED": "0", "LANG": "C.UTF-8"}
+        proc = subprocess.Popen(
+            [sys.executable, "-I", "-S", script],
+            cwd=work,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            preexec_fn=_limits,
+            start_new_session=True,
+        )
+        timed_out = False
         try:
-            proc = subprocess.run(
-                [sys.executable, "-I", "-S", script],
-                cwd=work,
-                env=env,
-                capture_output=True,
-                timeout=WALL_TIMEOUT_S,
-                preexec_fn=_limits,
-                start_new_session=True,
-            )
+            out, err = proc.communicate(timeout=WALL_TIMEOUT_S)
         except subprocess.TimeoutExpired:
+            timed_out = True
+            _kill_group(proc.pid)
+            out, err = proc.communicate()
+        finally:
+            _kill_group(proc.pid)
+        if timed_out:
             return "py timed out after 10 s"
-        text = (proc.stdout + proc.stderr).decode("utf-8", errors="replace").strip()
+        text = (out + err).decode("utf-8", errors="replace").strip()
         if proc.returncode == -signal.SIGXCPU:
             text = f"py stopped at the {CPU_SECONDS} s CPU limit"
         elif proc.returncode != 0 and not text:

@@ -4,7 +4,7 @@
 Workbench Gym environment.
 
 ``reset(task_id=...)`` picks a family and level and builds a fresh instance
-(each reset draws new randomness unless ``seed`` is given). The policy then
+(each reset draws new randomness; ``seed`` is honored only with allow_seed=True). The policy then
 uses at most MAX_CALLS tool calls: ls, read, grep and py read the instance,
 and submit ends the episode with the reward from core.grading.
 """
@@ -27,9 +27,13 @@ from ..models import WorkbenchAction, WorkbenchObservation
 class WorkbenchEnvironment(Environment):
     SUPPORTS_CONCURRENT_SESSIONS = True
 
-    def __init__(self, families=None):
+    def __init__(self, families=None, allow_seed: bool = False):
         super().__init__()
         self._families = families if families is not None else load_families()
+        # Clients cannot choose the instance. A client-chosen seed would let the
+        # py tool open a second session and read answers, so only in-process
+        # callers (calibration, tests) may pass one.
+        self._allow_seed = allow_seed
         self._episode: dict | None = None
         self._state = State(episode_id=None, step_count=0)
 
@@ -38,7 +42,10 @@ class WorkbenchEnvironment(Environment):
         family = self._families.get(family_id)
         if family is None or level not in family.levels:
             raise ValueError(f"unknown task_id: {task_id!r}")
-        rng = random.Random(seed) if seed is not None else random.Random(secrets.randbits(64))
+        if seed is not None and self._allow_seed:
+            rng = random.Random(seed)
+        else:
+            rng = random.Random(secrets.randbits(64))
         built = family.build(level, rng)
         episode_id = episode_id or str(uuid4())
         self._episode = {

@@ -88,7 +88,7 @@ def test_task_id_parsing():
 
 
 def test_episode_protocol_end_to_end():
-    env = WorkbenchEnvironment(families=load_families())
+    env = WorkbenchEnvironment(families=load_families(), allow_seed=True)
     obs = env.reset(task_id="med2-L1", seed=11)
     assert obs.done is False and obs.calls_left == MAX_CALLS
     answer = env._episode["built"].answer
@@ -101,7 +101,7 @@ def test_episode_protocol_end_to_end():
 
 
 def test_episode_ends_at_call_cap_with_zero():
-    env = WorkbenchEnvironment(families=load_families())
+    env = WorkbenchEnvironment(families=load_families(), allow_seed=True)
     env.reset(task_id="med2-L1", seed=3)
     obs = None
     for _ in range(MAX_CALLS):
@@ -110,7 +110,7 @@ def test_episode_ends_at_call_cap_with_zero():
 
 
 def test_finish_style_submit_scores_zero():
-    env = WorkbenchEnvironment(families=load_families())
+    env = WorkbenchEnvironment(families=load_families(), allow_seed=True)
     env.reset(task_id="med2-L3", seed=5)
     obs = env.step(WorkbenchAction(tool="submit", args={"answer": None}))
     assert obs.done is True and obs.reward == 0.0
@@ -119,3 +119,11 @@ def test_finish_style_submit_scores_zero():
 def test_extra_action_keys_are_ignored():
     action = WorkbenchAction.model_validate({"tool": "ls", "args": {}, "finish": True})
     assert action.tool == "ls"
+
+
+def test_client_seed_is_ignored_by_default():
+    a = WorkbenchEnvironment(families=load_families())
+    b = WorkbenchEnvironment(families=load_families())
+    a.reset(task_id="med2-L2", seed=1)
+    b.reset(task_id="med2-L2", seed=1)
+    assert a._episode["built"].files != b._episode["built"].files

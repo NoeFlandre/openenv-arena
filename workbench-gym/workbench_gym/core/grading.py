@@ -14,12 +14,15 @@ kind allows a tolerance. Reward:
 """
 
 import json
+import re
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
 
 MAX_ANSWER_CHARS = 300
 KINDS = frozenset({"int", "number", "text", "set", "fraction", "object"})
+# Plain p/q or integer text only. Fraction() on an exponent such as 1e20 hangs the server.
+_FRACTION_RE = re.compile(r"^-?[0-9]{1,15}(/[0-9]{1,15})?$")
 
 
 @dataclass(frozen=True)
@@ -84,7 +87,7 @@ def field_ok(spec: Field, got: Any, want: Any) -> bool:
     if spec.kind == "set":
         return isinstance(got, list) and _set_key(got) == _set_key(want)
     if spec.kind == "fraction":
-        if not isinstance(got, str):
+        if not isinstance(got, str) or not _FRACTION_RE.match(got.strip()):
             return False
         try:
             return Fraction(got.strip()) == Fraction(str(want))
