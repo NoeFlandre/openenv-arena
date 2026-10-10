@@ -24,6 +24,10 @@ RUN pip install --no-cache-dir --no-deps ./vendor/openenv-0.6.1.dev0-py3-none-an
 COPY workbench_gym ./workbench_gym
 COPY openenv.yaml ./
 
+# The server runs as root. The py tool runs as nobody, so it cannot read the
+# family code, the reference solvers or the grader.
+RUN chmod -R go-rwx /app/env
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \

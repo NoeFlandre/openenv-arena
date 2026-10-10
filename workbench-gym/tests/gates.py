@@ -10,7 +10,7 @@ Gates, all over every level and every seed:
   decoys     at least 3 plausible wrong answers, each scoring below 1.0
   equiv      the answer re-serialised differently (key order, sets, 1.0 for 1,
              unreduced fractions) still scores 1.0
-  leak       answer values do not appear in the question or reset text
+  leak       answer values do not appear in the question
   prior      the single most common answer solves at most 10% of instances
 
 Run for one family:  python -m tests.gates sw1 [seeds]

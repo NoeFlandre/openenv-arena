@@ -109,6 +109,7 @@ async def play(task_id: str, seed: int, client: httpx.AsyncClient, token: str) -
         action_dict = parse_reply(reply)
         if action_dict is None:
             record["invalid"] += 1
+            record.setdefault("invalid_text", []).append(reply[:300])
             record["ended"] = "invalid_reply"
             obs = env.step(WorkbenchAction.model_validate(FINISH))
             record["reward"] = obs.reward

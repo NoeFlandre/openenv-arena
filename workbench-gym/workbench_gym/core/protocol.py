@@ -16,7 +16,8 @@ TOOLS_TEXT = (
     '{"tool":"ls","args":{"path":""}}\n'
     '{"tool":"read","args":{"path":"f.txt","start":0,"count":12}}\n'
     '{"tool":"grep","args":{"path":"","text":"word"}}\n'
-    '{"tool":"py","args":{"lines":["print(1+1)"]}}  (stdlib, on a copy of the files)\n'
+    '{"tool":"py","args":{"lines":["print(1+1)"]}}  (stdlib, on a copy of the files; '
+    "in py lines use single quotes only and no backslashes)\n"
     '{"tool":"submit","args":{"answer":{...}}}  ends the episode\n'
     f"You have {MAX_CALLS} calls, submit included."
 )
