@@ -55,5 +55,6 @@ def reset_text(task_id: str, question: str, fields: dict) -> str:
         f"TASK {task_id}. {question}\n"
         f"Answer fields: {field_list}.\n"
         f"{TOOLS_TEXT}\n"
-        "Reply with exactly one JSON object on one line."
+        "Reply with exactly one JSON object on one line. "
+        "Keep replies short: no long code, no explanations."
     )

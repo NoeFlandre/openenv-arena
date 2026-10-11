@@ -22,8 +22,8 @@ import subprocess
 import sys
 import tempfile
 
-MAX_LINES = 20
-MAX_SOURCE_CHARS = 600
+MAX_LINES = 12
+MAX_SOURCE_CHARS = 400
 MAX_OUTPUT_CHARS = 400
 WALL_TIMEOUT_S = 10
 CPU_SECONDS = 3
