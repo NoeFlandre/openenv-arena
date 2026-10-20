@@ -10,6 +10,22 @@ with `submit`, which takes a JSON answer with named fields.
 Reward is `1.0` when every field is correct. Partial credit (below `0.5`) is
 given for some correct fields. It is `0.0` otherwise.
 
+## Terminal Workbench (v4)
+
+From v4 the image serves the same task families behind the interface of
+OpenEnv's `tbench2_env` (same action and observation fields):
+
+- `{"action_type": "exec", "command": "..."}` runs a shell command (as an
+  unprivileged user, 20 s limit) in the episode's working directory.
+- `{"action_type": "write_file", "file_path": "answer.json", "content": "..."}`
+  writes a file inside that directory.
+- `{"action_type": "evaluate"}` grades `answer.json` and ends the episode.
+
+Reward is 1.0 when `answer.json` holds every answer field correctly and 0.0
+otherwise. Every observation repeats the instruction. After 32 actions the
+answer file is evaluated. Code: `workbench_gym/terminal/`, tests:
+`tests/test_terminal.py`.
+
 ## Layout
 
 | Path | Contents |
