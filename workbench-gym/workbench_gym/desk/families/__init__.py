@@ -21,6 +21,8 @@ FAMILY_MODULES = [
     "fin8",
     "fin9",
     "fin10",
+    "fin11",
+    "fin12",
     # natural-science
     "sci4",
     "sci5",
@@ -29,6 +31,7 @@ FAMILY_MODULES = [
     "sci8",
     "sci9",
     "sci10",
+    "sci11",
     # mathematics-or-formal-reasoning
     "math4",
     "math5",

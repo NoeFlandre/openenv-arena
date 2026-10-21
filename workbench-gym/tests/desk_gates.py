@@ -64,7 +64,8 @@ def check_family(family, seeds: int = 60) -> list[str]:
                     failures.append(f"{where}: decoy {i} scores {reward}")
             if grade_texts(task.outputs, {})[0] != 0.0:
                 failures.append(f"{where}: no outputs does not score 0")
-            seen[repr(sorted(task.oracle.items()))] += 1
+            # The expected values (an .xlsx oracle's bytes differ by timestamps, so not those).
+            seen[repr(task.outputs)] += 1
         top = seen.most_common(1)[0][1] if seen else 0
         if top > PRIOR_LIMIT * seeds:
             failures.append(f"{family.id}-L{level}: one answer in {top} of {seeds} instances")

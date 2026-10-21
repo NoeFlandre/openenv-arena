@@ -24,6 +24,7 @@ import os
 import random
 import re
 import stat
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -206,7 +207,35 @@ class TextOut:
         return True, value_ok(self.check, value, self.want)
 
 
-Output = JsonOut | CsvOut | TextOut
+@dataclass(frozen=True)
+class XlsxOut:
+    """An .xlsx workbook. Each ``cells`` key is "Sheet!B12"; the cell must hold a value
+    (a number or text, not a formula without a cached result) that ``check`` accepts."""
+
+    path: str
+    cells: dict[str, tuple[Check, Any]]
+
+    def grade(self, data: bytes) -> tuple[bool, bool]:
+        from openpyxl import load_workbook
+
+        try:
+            book = load_workbook(io.BytesIO(data), data_only=True)
+        except Exception:
+            return False, False
+        shape, right = True, True
+        for ref, (check, want) in self.cells.items():
+            sheet, cell = ref.split("!")
+            if sheet not in book.sheetnames:
+                return False, False
+            value = book[sheet][cell].value
+            if value is None or not shape_ok(check, value):
+                shape, right = False, False
+            elif not value_ok(check, value, want):
+                right = False
+        return shape, right
+
+
+Output = JsonOut | CsvOut | TextOut | XlsxOut
 
 
 @dataclass
@@ -216,8 +245,8 @@ class DeskTask:
     instruction: str
     files: dict[str, str | bytes]
     outputs: list[Output]
-    oracle: dict[str, str]
-    decoys: list[dict[str, str]] = field(default_factory=list)
+    oracle: dict[str, str | bytes]
+    decoys: list[dict[str, str | bytes]] = field(default_factory=list)
 
     def text(self, root: str) -> str:
         return self.instruction.replace("{root}", root)
@@ -234,12 +263,14 @@ class DeskFamily:
     def build(self, level: int, rng: random.Random) -> DeskTask:
         raise NotImplementedError
 
-    def solve(self, files: dict[str, str | bytes], instruction: str) -> dict[str, str]:
+    def solve(
+        self, files: Mapping[str, str | bytes], instruction: str
+    ) -> Mapping[str, str | bytes]:
         raise NotImplementedError
 
 
-def read_output(workdir: str, relpath: str) -> str | None:
-    """The text of an output file, or None when it is missing, too big or not a regular file."""
+def read_output(workdir: str, relpath: str) -> bytes | None:
+    """The bytes of an output file, or None when it is missing, too big or not a regular file."""
     path = os.path.join(workdir, relpath)
     try:
         info = os.lstat(path)
@@ -249,20 +280,28 @@ def read_output(workdir: str, relpath: str) -> str | None:
         return None
     try:
         fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-        with os.fdopen(fd, "r", encoding="utf-8", errors="replace") as fh:
+        with os.fdopen(fd, "rb") as fh:
             return fh.read(MAX_OUTPUT_BYTES)
     except OSError:
         return None
 
 
-def grade_texts(outputs: list[Output], texts: dict[str, str | None]) -> tuple[float, str]:
-    """Reward for output texts keyed by path, with a short note for the agent."""
+def grade_texts(
+    outputs: Sequence[Output], texts: Mapping[str, str | bytes | None]
+) -> tuple[float, str]:
+    """Reward for output file contents keyed by path, with a short note for the agent."""
     shapes, rights = [], []
     for out in outputs:
-        text = texts.get(out.path)
-        if text is None:
+        content = texts.get(out.path)
+        if content is None:
             return 0.0, f"{out.path} is missing"
-        shape, right = out.grade(text)
+        if isinstance(out, XlsxOut):
+            data = content if isinstance(content, bytes) else content.encode("utf-8")
+            shape, right = out.grade(data)
+        else:
+            if isinstance(content, bytes):
+                content = content.decode("utf-8", errors="replace")
+            shape, right = out.grade(content)
         shapes.append(shape)
         rights.append(right)
     if all(rights):
@@ -272,7 +311,7 @@ def grade_texts(outputs: list[Output], texts: dict[str, str | None]) -> tuple[fl
     return 0.0, "an output does not have the asked format"
 
 
-def grade_workdir(outputs: list[Output], workdir: str) -> tuple[float, str]:
+def grade_workdir(outputs: Sequence[Output], workdir: str) -> tuple[float, str]:
     return grade_texts(outputs, {o.path: read_output(workdir, o.path) for o in outputs})
 
 

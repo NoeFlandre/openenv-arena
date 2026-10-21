@@ -36,8 +36,15 @@ def act(tool: str, **args) -> DeskAction:
     return DeskAction(tool=tool, args=args)
 
 
-def write_outputs(env: DeskEnvironment, files: dict[str, str]) -> None:
+def write_outputs(env: DeskEnvironment, files: dict[str, str | bytes]) -> None:
     for path, content in files.items():
+        if isinstance(content, bytes):
+            # A workbook: the agent would save it from Python, so put the bytes there directly.
+            target = os.path.join(env._require_episode()["workdir"], path)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "wb") as fh:
+                fh.write(content)
+            continue
         obs = env.step(act("write", path=path, content=content))
         assert not obs.error, obs.error
 

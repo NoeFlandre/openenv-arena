@@ -65,10 +65,14 @@ def cap_output(text: str) -> str:
 def run_shell(command: str, workdir: str) -> tuple[int, str]:
     """Run ``command`` in ``workdir``. Returns (exit status, capped stdout and stderr)."""
     env = {
-        "PATH": "/usr/local/bin:/usr/bin:/bin",
+        "PATH": "/opt/agent/bin:/usr/local/bin:/usr/bin:/bin",
         "HOME": workdir,
         "LANG": "C.UTF-8",
         "PYTHONDONTWRITEBYTECODE": "1",
+        # One BLAS thread: numpy would otherwise start one thread per host CPU, and
+        # threads count against the process limit.
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
     }
     proc = subprocess.Popen(
         ["/bin/sh", "-c", command],

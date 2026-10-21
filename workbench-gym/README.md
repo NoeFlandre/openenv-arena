@@ -1,56 +1,69 @@
-# Workbench Gym
+# Workbench Desk
 
-An [OpenEnv](https://github.com/meta-pytorch/OpenEnv) environment for the [OpenEnv Arena](https://openenvarena-arena.hf.space/).
+An [OpenEnv](https://github.com/meta-pytorch/OpenEnv) environment for the
+[OpenEnv Arena](https://openenvarena-arena.hf.space/). Each episode is a small
+desk job, modeled on the SkillsBench task shape: a prose instruction, input
+files (CSV, XLSX, JSON, text) in a workspace, and output files that must hold
+the right values in the asked format.
 
-Each episode gives one task from one of eight domains. The task is a small
-workspace: text files that the agent reads with `ls`, `read`, `grep` and `py`
-(stdlib Python on a copy of the files). The agent has 12 tool calls. It ends
-with `submit`, which takes a JSON answer with named fields.
+## Interface
 
-Reward is `1.0` when every field is correct. Partial credit (below `0.5`) is
-given for some correct fields. It is `0.0` otherwise.
+The action and observation are `tbench2_env`-shaped in spirit but use three
+tools, one JSON object per action:
 
-## Terminal Workbench (v4)
+- `{"tool": "bash", "args": {"command": "..."}}` runs a shell command in the
+  workspace (as an unprivileged user, 20 s and 10 s CPU limit). Python 3 with
+  pandas, numpy and openpyxl is on the path.
+- `{"tool": "write", "args": {"path": "...", "content": "..."}}` writes a text
+  file inside the workspace.
+- `{"tool": "submit", "args": {}}` grades the output files the instruction
+  names and ends the episode.
 
-From v4 the image serves the same task families behind the interface of
-OpenEnv's `tbench2_env` (same action and observation fields):
+The first observation is the instruction with the workspace path filled in.
+There are 20 calls per episode; after the last one the outputs are graded.
 
-- `{"action_type": "exec", "command": "..."}` runs a shell command (as an
-  unprivileged user, 20 s limit) in the episode's working directory.
-- `{"action_type": "write_file", "file_path": "answer.json", "content": "..."}`
-  writes a file inside that directory.
-- `{"action_type": "evaluate"}` grades `answer.json` and ends the episode.
+## Reward
 
-Reward is 1.0 when `answer.json` holds every answer field correctly and 0.0
-otherwise. Every observation repeats the instruction. After 32 actions the
-answer file is evaluated. Code: `workbench_gym/terminal/`, tests:
-`tests/test_terminal.py`.
+- `1.0`: every output file is right.
+- `0.1`: every output file exists with the asked shape, but a value is wrong.
+- `0.0`: otherwise (missing file, wrong format, unsafe path, timeout).
+
+## Families
+
+Each family (`workbench_gym/desk/families/<id>.py`) builds fresh instances from a
+seeded random generator, has two levels (`<id>-L1`, `<id>-L2`), a reference
+solver that works from the files alone, and decoys (plausible wrong answers).
+Level 2 adds real-data traps: status rows, revisions, unit lines, sentinel
+values and corrections in a notes file.
+
+Domains: software engineering, industrial and physical systems, natural science,
+office and white-collar work, finance and economics, math and formal reasoning,
+cybersecurity, media and content production.
+
+## Check
+
+```sh
+uv run ruff format --check . && uv run ruff check . && uv run ty check
+uv run pytest
+uv run python -m tests.desk_gates fin4 60   # gates for one family
+```
 
 ## Layout
 
 | Path | Contents |
 | --- | --- |
-| `workbench_gym/core/` | Grading, file store, `py` sandbox, episode protocol |
-| `workbench_gym/families/` | One module per task family (`sw1`, `med2`, ...) |
-| `workbench_gym/server/` | OpenEnv environment and HTTP/WebSocket server |
-| `tests/gates.py` | Quality gates every family must pass |
-| `tests/` | Framework tests and family gate tests |
+| `workbench_gym/desk/environment.py` | Episode logic: workspace, tools, grading |
+| `workbench_gym/desk/spec.py` | Output checks (JSON, CSV, text, XLSX) and the reward rule |
+| `workbench_gym/desk/shell.py` | Sandboxed `bash` for the agent |
+| `workbench_gym/desk/families/` | One module per task family |
+| `tests/desk_gates.py` | Quality gates every family must pass |
+| `tests/test_desk.py` | Tool, grading and workspace-safety tests, and the gates for every family |
 
-## Check
-
-```sh
-PYTHONPATH=. python -m pytest -q tests/test_core.py
-PYTHONPATH=. python -m tests.gates            # all families, 200 seeds each
-```
-
-## Run
+## Build
 
 ```sh
-docker build --platform linux/amd64 -t workbench-gym:dev .
-docker run --rm -p 8000:8000 workbench-gym:dev
-openenv validate --url http://localhost:8000
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+docker build -t ghcr.io/noeflandre/workbench-gym:v5 .
 ```
 
-## Source
-
-Apache License 2.0.
+The image serves the server on port 8000 (`/health`, `/schema`, `/ws`).

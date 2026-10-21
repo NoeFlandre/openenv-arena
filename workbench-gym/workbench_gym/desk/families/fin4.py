@@ -19,6 +19,7 @@ import csv
 import io
 import json
 import random
+from collections.abc import Mapping
 from decimal import ROUND_HALF_UP, Decimal
 
 from ..spec import Check, DeskFamily, DeskTask, JsonOut, must_match
@@ -251,7 +252,9 @@ class Fin4(DeskFamily):
             decoys=[{OUT: json.dumps(_answer(d))} for d in decoys_raw],
         )
 
-    def solve(self, files: dict[str, str | bytes], instruction: str) -> dict[str, str]:
+    def solve(
+        self, files: Mapping[str, str | bytes], instruction: str
+    ) -> Mapping[str, str | bytes]:
         as_of = must_match(r"right after its (\d{4}-\d{2}) payment", instruction).group(1)
         loans = list(csv.DictReader(io.StringIO(str(files["loans.csv"]))))
         events = list(csv.DictReader(io.StringIO(str(files["events.csv"]))))

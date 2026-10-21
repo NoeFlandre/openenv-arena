@@ -25,9 +25,9 @@ from uuid import uuid4
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
-from ..terminal.shell import cap_output, give_to_sandbox_user, run_shell
 from .families import load_families, parse_task_id
 from .models import DeskAction, DeskObservation
+from .shell import cap_output, give_to_sandbox_user, run_shell
 from .spec import grade_workdir
 
 MAX_CALLS = 20

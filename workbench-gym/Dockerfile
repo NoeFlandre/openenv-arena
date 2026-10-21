@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
-# Builds the Workbench Gym OpenEnv server (Terminal Workbench: the tbench2_env
-# interface over the Workbench task families). The arena runs linux/amd64 only.
-#   DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build -t ghcr.io/noeflandre/workbench-gym:v4 .
+# Builds the Workbench Desk OpenEnv server (v5): work tasks with real input files,
+# a shell, and output files that are checked. The arena runs linux/amd64 only.
+#   DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build -t ghcr.io/noeflandre/workbench-gym:v5 .
 
 FROM python:3.12-slim
 
@@ -14,12 +14,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONPATH=/app/env
 
-# Small shell tools the tasks invite (python3, awk, grep and sed are already there).
+# Shell tools the tasks invite (python3, awk, grep and sed are already there).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends jq \
+    && apt-get install -y --no-install-recommends jq sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Dependencies first, so this layer stays cached while the code changes.
+# The agent's Python: its own virtual environment with the usual data libraries,
+# first on the PATH of agent commands, so the server's packages stay separate.
+RUN python -m venv /opt/agent \
+    && /opt/agent/bin/pip install --no-cache-dir \
+        numpy==2.2.6 pandas==2.2.3 openpyxl==3.1.5
+
+# Server dependencies first, so this layer stays cached while the code changes.
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -31,14 +37,14 @@ COPY workbench_gym ./workbench_gym
 COPY openenv.yaml ./
 
 # The server runs as root. Agent commands run as nobody, so they cannot read the
-# family code, the reference solvers or the grader. Episode workspaces are
-# created under /app, which stays traversable.
-RUN chmod -R go-rwx /app/env && chmod 755 /app
-ENV WG_WORK_ROOT=/app
+# family code or the grader. Episode workspaces are created under /root, which
+# nobody may traverse but not list.
+RUN chmod -R go-rwx /app/env && chmod 755 /app && chmod 711 /root
+ENV WG_WORK_ROOT=/root
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)" || exit 1
 
-CMD ["uvicorn", "workbench_gym.terminal.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "workbench_gym.desk.app:app", "--host", "0.0.0.0", "--port", "8000"]
