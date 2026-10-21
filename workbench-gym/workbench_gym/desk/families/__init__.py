@@ -2,7 +2,6 @@
 
 """
 Family registry for Workbench Desk. Each module named here defines ``FAMILY``.
-A module that does not exist yet is skipped.
 
 Task ids are ``<family>-L<level>``, for example ``fin4-L2``.
 """
@@ -15,31 +14,17 @@ from ..spec import DeskFamily
 FAMILY_MODULES = [
     # finance-economics
     "fin4",
-    "fin5",
-    "fin6",
-    "fin7",
-    "fin8",
-    "fin9",
-    "fin10",
     "fin11",
     "fin12",
     # natural-science
     "sci4",
-    "sci5",
-    "sci6",
-    "sci7",
-    "sci8",
-    "sci9",
-    "sci10",
     "sci11",
     # mathematics-or-formal-reasoning
     "math4",
     "math5",
-    "math6",
     # media-content-production
     "med4",
     "med5",
-    "med6",
     # office-white-collar
     "off4",
     "off5",
@@ -79,13 +64,7 @@ def parse_task_id(task_id: str) -> tuple[str, int]:
 def load_families() -> dict[str, DeskFamily]:
     families: dict[str, DeskFamily] = {}
     for name in FAMILY_MODULES:
-        try:
-            module = importlib.import_module(f"{__name__}.{name}")
-        except ModuleNotFoundError as exc:
-            # A family still being written is skipped; test_desk checks that all exist.
-            if exc.name == f"{__name__}.{name}":
-                continue
-            raise
+        module = importlib.import_module(f"{__name__}.{name}")
         family = module.FAMILY
         if family.id != name:
             raise ValueError(f"module {name} defines family {family.id}")

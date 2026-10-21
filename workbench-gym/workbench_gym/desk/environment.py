@@ -27,10 +27,11 @@ from openenv.core.env_server.types import State
 
 from .families import load_families, parse_task_id
 from .models import DeskAction, DeskObservation
-from .shell import cap_output, give_to_sandbox_user, run_shell
+from .shell import MAX_OUTPUT_CHARS, cap_output, give_to_sandbox_user, run_shell
 from .spec import grade_workdir
 
 MAX_CALLS = 20
+MAX_WRITE_CHARS = 64 * 1024
 TOOL_ALIASES = {
     "bash": "bash",
     "exec": "bash",
@@ -70,7 +71,7 @@ def tools_text(workdir: str) -> str:
         f"(python3 with pandas, numpy and openpyxl is installed); "
         f'{{"tool": "write", "args": {{"path": "...", "content": "..."}}}} writes a file; '
         f'{{"tool": "submit", "args": {{}}}} checks your output files and ends the task. '
-        f"You have {MAX_CALLS} calls. Command output is cut at 4000 characters, "
+        f"You have {MAX_CALLS} calls. Command output is cut at {MAX_OUTPUT_CHARS} characters, "
         f"so print only what you need."
     )
 
@@ -173,6 +174,8 @@ class DeskEnvironment(Environment):
         workdir = self._require_episode()["workdir"]
         if not file_path:
             return "", 'write needs args.path and args.content, for example {"path": "out.json"}'
+        if len(content) > MAX_WRITE_CHARS:
+            return "", f"content is over {MAX_WRITE_CHARS} characters; write it in parts with bash"
         target = file_path if os.path.isabs(file_path) else os.path.join(workdir, file_path)
         real_dir = os.path.realpath(workdir)
         real_target = os.path.realpath(target)

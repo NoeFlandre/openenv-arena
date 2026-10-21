@@ -108,6 +108,12 @@ def test_missing_output_scores_zero_and_wrong_values_get_format_credit(env):
     assert env.step(act("submit")).reward == FORMAT_CREDIT
 
 
+def test_writes_are_capped(env):
+    env.reset(task_id=SOME_TASK, seed=1)
+    obs = env.step(act("write", path="big.txt", content="x" * (65 * 1024)))
+    assert "over" in obs.error and obs.done is False
+
+
 def test_writes_stay_inside_the_workspace(env):
     env.reset(task_id=SOME_TASK, seed=1)
     assert "inside" in env.step(act("write", path="../x", content="x")).error
