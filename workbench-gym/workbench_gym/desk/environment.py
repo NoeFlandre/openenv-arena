@@ -10,9 +10,10 @@ files into a new workspace directory. The agent then has MAX_CALLS tool calls:
 - ``write`` writes ``content`` to ``path`` inside the workspace.
 - ``submit`` grades the output files the instruction asks for and ends the episode.
 
-Reward (see ``spec``): 1.0 when every output is right, a small format credit
-when the outputs exist with the asked shape, 0.0 otherwise. After the last call
-the outputs are graded as they are. The instruction is sent once, at reset.
+Reward (see ``spec``): exact outputs earn 1.0. Other outputs receive partial
+credit capped at 0.2, based on format and correct-value fractions. After the
+last call the outputs are graded as they are. The instruction is sent once, at
+reset.
 """
 
 import os

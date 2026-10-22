@@ -8,12 +8,8 @@ input and output path, and the outputs the grader checks. Outputs are files the
 agent writes into its workspace: a JSON object, a CSV table or one plain value.
 
 Grading reads each output file (a regular file of at most MAX_OUTPUT_BYTES, no
-symlinks) and compares it with the expected content:
-
-- 1.0 when every output is right.
-- FORMAT_CREDIT when every output exists and has the asked shape (JSON keys and
-  value types, CSV header and row count, a parseable value) but a value is wrong.
-- 0.0 otherwise.
+symlinks). An exact answer earns 1.0. Otherwise, the format and correct-value
+fractions give partial credit capped at ``PARTIAL_REWARD_CAP``.
 """
 
 import csv
@@ -24,11 +20,14 @@ import os
 import random
 import re
 import stat
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
 FORMAT_CREDIT = 0.1
+PARTIAL_VALUE_BONUS = 0.1
+PARTIAL_REWARD_CAP = 0.2
 MAX_OUTPUT_BYTES = 256 * 1024
 CHECK_KINDS = frozenset({"int", "num", "text", "set", "list", "map", "bool"})
 
@@ -116,6 +115,52 @@ def shape_ok(check: Check, got: Any) -> bool:
     return isinstance(got, dict)
 
 
+def _expected_units(check: Check, want: Any) -> int:
+    """How many independently checkable values the expected answer contains."""
+    if check.kind in ("list", "set", "map"):
+        return max(len(want), 1)
+    return 1
+
+
+def _credit_units(check: Check, got: Any, want: Any) -> tuple[int, int, int]:
+    """Return (well-shaped, correct, total) value units for a JSON field."""
+    if check.kind in ("list", "set"):
+        total = (
+            max(len(got), len(want), 1) if isinstance(got, list) else _expected_units(check, want)
+        )
+        if not isinstance(got, list):
+            return 0, 0, total
+        if not got and not want:
+            return 1, 1, 1
+        if check.kind == "set":
+            actual = Counter(map(_scalar_key, got))
+            expected = Counter(map(_scalar_key, want))
+            correct = sum((actual & expected).values())
+        else:
+            correct = sum(
+                _scalar_ok(check, got[i], value) for i, value in enumerate(want) if i < len(got)
+            )
+        return total, correct, total
+
+    if check.kind == "map":
+        if not isinstance(got, dict):
+            return 0, 0, _expected_units(check, want)
+        got_norm = {str(key).strip(): value for key, value in got.items()}
+        total = max(len(got_norm), len(want), 1)
+        if not got_norm and not want:
+            return 1, 1, 1
+        correct = sum(
+            key in got_norm and _scalar_ok(check, got_norm[key], value)
+            for key, value in want.items()
+        )
+        return total, correct, total
+
+    total = 1
+    shaped = int(shape_ok(check, got))
+    correct = int(value_ok(check, got, want))
+    return shaped, correct, total
+
+
 def _parse_cell(check: Check, cell: str) -> Any:
     """A CSV cell as the type the column asks for, or None when it does not parse."""
     text = cell.strip()
@@ -149,6 +194,27 @@ class JsonOut:
         )
         return shape, right
 
+    def score_units(self, text: str) -> tuple[int, int, int]:
+        """Count shape and exact-value credit without discarding correct fields."""
+        expected_total = sum(
+            _expected_units(check, self.want[name]) for name, check in self.checks.items()
+        )
+        try:
+            got = json.loads(text)
+        except ValueError:
+            return 0, 0, expected_total
+        if not isinstance(got, dict):
+            return 0, 0, expected_total
+        shaped = correct = total = 0
+        for name, check in self.checks.items():
+            shape_units, correct_units, field_units = _credit_units(
+                check, got.get(name), self.want[name]
+            )
+            shaped += shape_units
+            correct += correct_units
+            total += field_units
+        return shaped, correct, total
+
 
 @dataclass(frozen=True)
 class CsvOut:
@@ -161,7 +227,12 @@ class CsvOut:
     key: int | None = None
 
     def grade(self, text: str) -> tuple[bool, bool]:
-        lines = [row for row in csv.reader(io.StringIO(text.lstrip("﻿"))) if row]
+        try:
+            lines = [
+                row for row in csv.reader(io.StringIO(text.lstrip("\ufeff"), newline="")) if row
+            ]
+        except csv.Error:
+            return False, False
         if not lines or tuple(c.strip() for c in lines[0]) != self.header:
             return False, False
         body = lines[1:]
@@ -191,6 +262,65 @@ class CsvOut:
         )
         return True, right
 
+    def score_units(self, text: str) -> tuple[int, int, int]:
+        """Score parseable cells individually so one wrong cell does not erase the rest."""
+        expected_cells = max(len(self.rows) * len(self.header), 1)
+        try:
+            lines = [
+                row for row in csv.reader(io.StringIO(text.lstrip("\ufeff"), newline="")) if row
+            ]
+        except csv.Error:
+            return 0, 0, expected_cells
+        if not lines or tuple(cell.strip() for cell in lines[0]) != self.header:
+            return 0, 0, expected_cells
+
+        body = lines[1:]
+        width = max(len(self.header), max((len(row) for row in body), default=0), 1)
+        total = max(len(self.rows), len(body), 1) * width
+        shaped = correct = 0
+
+        if self.key is None:
+            for row_index in range(max(len(self.rows), len(body))):
+                got_row = body[row_index] if row_index < len(body) else []
+                want_row = self.rows[row_index] if row_index < len(self.rows) else None
+                for col_index in range(width):
+                    if col_index >= len(got_row):
+                        continue
+                    check = self.columns[col_index] if col_index < len(self.columns) else None
+                    if check is None:
+                        continue
+                    value = _parse_cell(check, got_row[col_index])
+                    if value is None:
+                        continue
+                    shaped += 1
+                    if want_row is not None and col_index < len(want_row):
+                        correct += int(_scalar_ok(check, value, want_row[col_index]))
+            return shaped, correct, total
+
+        key = self.key
+        by_key: dict[str, list[str]] = {}
+        for row in body:
+            if key < len(row):
+                by_key.setdefault(row[key].strip(), row)
+
+        # A valid CSV still earns format credit for cells whose row key is unexpected.
+        for row in body:
+            for col_index, raw in enumerate(row[: len(self.columns)]):
+                if _parse_cell(self.columns[col_index], raw) is not None:
+                    shaped += 1
+
+        for want_row in self.rows:
+            got_row = by_key.get(str(want_row[key]).strip())
+            if got_row is None:
+                continue
+            for col_index, check in enumerate(self.columns):
+                if col_index >= len(got_row):
+                    continue
+                value = _parse_cell(check, got_row[col_index])
+                if value is not None:
+                    correct += int(_scalar_ok(check, value, want_row[col_index]))
+        return min(shaped, total), min(correct, total), total
+
 
 @dataclass(frozen=True)
 class TextOut:
@@ -205,6 +335,12 @@ class TextOut:
         if value is None or (self.check.kind == "text" and not value):
             return False, False
         return True, value_ok(self.check, value, self.want)
+
+    def score_units(self, text: str) -> tuple[int, int, int]:
+        value = _parse_cell(self.check, text)
+        if value is None or (self.check.kind == "text" and not value):
+            return 0, 0, 1
+        return 1, int(value_ok(self.check, value, self.want)), 1
 
 
 @dataclass(frozen=True)
@@ -233,6 +369,26 @@ class XlsxOut:
             elif not value_ok(check, value, want):
                 right = False
         return shape, right
+
+    def score_units(self, data: bytes) -> tuple[int, int, int]:
+        from openpyxl import load_workbook
+
+        total = max(len(self.cells), 1)
+        try:
+            book = load_workbook(io.BytesIO(data), data_only=True)
+        except Exception:
+            return 0, 0, total
+        shaped = correct = 0
+        for ref, (check, want) in self.cells.items():
+            sheet, cell = ref.split("!")
+            if sheet not in book.sheetnames:
+                continue
+            value = book[sheet][cell].value
+            if not shape_ok(check, value):
+                continue
+            shaped += 1
+            correct += int(value_ok(check, value, want))
+        return shaped, correct, total
 
 
 Output = JsonOut | CsvOut | TextOut | XlsxOut
@@ -290,25 +446,41 @@ def grade_texts(
     outputs: Sequence[Output], texts: Mapping[str, str | bytes | None]
 ) -> tuple[float, str]:
     """Reward for output file contents keyed by path, with a short note for the agent."""
-    shapes, rights = [], []
+    shaped = correct = total = 0
     for out in outputs:
         content = texts.get(out.path)
         if content is None:
             return 0.0, f"{out.path} is missing"
         if isinstance(out, XlsxOut):
             data = content if isinstance(content, bytes) else content.encode("utf-8")
-            shape, right = out.grade(data)
+            shape_units, correct_units, total_units = out.score_units(data)
         else:
             if isinstance(content, bytes):
                 content = content.decode("utf-8", errors="replace")
-            shape, right = out.grade(content)
-        shapes.append(shape)
-        rights.append(right)
-    if all(rights):
+            if isinstance(out, JsonOut):
+                shape_units, correct_units, total_units = out.score_units(content)
+            elif isinstance(out, CsvOut):
+                shape_units, correct_units, total_units = out.score_units(content)
+            else:
+                shape_units, correct_units, total_units = out.score_units(content)
+        shaped += shape_units
+        correct += correct_units
+        total += total_units
+    if total == 0:
+        return 0.0, "there are no checked output values"
+    if correct == total:
         return 1.0, "all outputs are correct"
-    if all(shapes):
+    reward = min(
+        PARTIAL_REWARD_CAP,
+        round((FORMAT_CREDIT * shaped + PARTIAL_VALUE_BONUS * correct) / total, 8),
+    )
+    if shaped == total and correct == 0:
         return FORMAT_CREDIT, "the outputs have the right shape but some values are wrong"
-    return 0.0, "an output does not have the asked format"
+    if correct:
+        return reward, "some output values are correct"
+    if shaped:
+        return reward, "some output values have the expected format"
+    return reward, "the outputs do not have the asked format"
 
 
 def grade_workdir(outputs: Sequence[Output], workdir: str) -> tuple[float, str]:

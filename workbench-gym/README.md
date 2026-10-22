@@ -24,9 +24,10 @@ There are 20 calls per episode; after the last one the outputs are graded.
 
 ## Reward
 
-- `1.0`: every output file is right.
-- `0.1`: every output file exists with the asked shape, but a value is wrong.
-- `0.0`: otherwise (missing file, wrong format, unsafe path, timeout).
+An exact answer earns `1.0`. Otherwise, the mean of the valid-format fraction
+and correct-value fraction gives partial credit, capped at `0.2`. Missing or
+unparseable values do not count as valid format; an absent output file or wrong
+CSV header scores `0.0`.
 
 ## Families
 
@@ -63,7 +64,10 @@ uv run python -m tests.desk_gates fin4 60   # gates for one family
 
 ```sh
 export DOCKER_DEFAULT_PLATFORM=linux/amd64
-docker build -t ghcr.io/noeflandre/workbench-gym:v5 .
+docker build -t ghcr.io/noeflandre/workbench-gym:v6 .
 ```
+
+The Dockerfile reuses the published v5 image by digest for its pinned server
+and agent dependencies, then copies the v6 source and configuration.
 
 The image serves the server on port 8000 (`/health`, `/schema`, `/ws`).
