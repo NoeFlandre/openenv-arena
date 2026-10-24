@@ -1,7 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
-# Reuse the published runtime and its pinned server and agent dependencies.
-
 FROM ghcr.io/noeflandre/workbench-gym@sha256:e77cf160349154c5e16f1d55da307bfa1a9c73b1f08b7fbfb51bc6162be9eab5
 
 WORKDIR /app/env

@@ -189,7 +189,7 @@ class JsonOut:
     def grade(self, text: str) -> tuple[bool, bool]:
         try:
             got = json.loads(text)
-        except ValueError:
+        except (ValueError, RecursionError):
             return False, False
         if not isinstance(got, dict):
             return False, False
@@ -206,7 +206,7 @@ class JsonOut:
         )
         try:
             got = json.loads(text)
-        except ValueError:
+        except (ValueError, RecursionError):
             return 0, 0, expected_total
         if not isinstance(got, dict):
             return 0, 0, expected_total
