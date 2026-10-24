@@ -20,6 +20,8 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
     steps:
       - uses: actions/checkout@v4
       - name: Work out the image tag
@@ -44,8 +46,16 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
+          build-args: |
+            SOURCE_REVISION=${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=Apache-2.0
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  verify:
+    needs: publish
+    uses: ./.github/workflows/verify-workbench-gym.yml
+    with:
+      image: ghcr.io/noeflandre/workbench-gym:${{ needs.publish.outputs.tag }}

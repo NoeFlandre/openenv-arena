@@ -39,3 +39,6 @@ select = ["E", "F", "I", "B", "UP"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ty.environment]
+extra-paths = ["workbench-gym"]

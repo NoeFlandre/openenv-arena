@@ -1,6 +1,6 @@
 spec_version: 1
 name: workbench_gym
-version: 0.5.0
+version: 0.7.0
 type: space
 runtime: fastapi
 app: workbench_gym.desk.app:app
