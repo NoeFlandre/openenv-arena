@@ -1,0 +1,19 @@
+{
+  "version": "v7",
+  "image": "ghcr.io/noeflandre/workbench-gym@sha256:df7de9d7aa004b0c0df27bbfa50765dfa4f478ad3e08d3786d4367f022c45590",
+  "source_commit": "6ad92307e3d6887797d146b747e472bee7e7f61b",
+  "source": "https://github.com/NoeFlandre/openenv-arena/tree/6ad92307e3d6887797d146b747e472bee7e7f61b/workbench-gym",
+  "verification": "https://github.com/NoeFlandre/openenv-arena/actions/runs/40086788550",
+  "ci": "https://github.com/NoeFlandre/openenv-arena/actions/runs/40086788950",
+  "openenv_revision": "86a180ede21e044f7929b9a7783ad83aa67d83a3",
+  "openenv_wheel_sha256": "6f7cd89e811f021a012ebcfd00193f44678188be414be6c7a0170fe9d91584c9",
+  "tests": {
+    "workbench": 68,
+    "existing": 20,
+    "websocket_episodes": 204,
+    "tasks": 34
+  },
+  "image_compressed_bytes": 218573872,
+  "image_layers": 18,
+  "llm_inference_used": false
+}
