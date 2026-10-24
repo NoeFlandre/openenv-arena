@@ -1,0 +1,34 @@
+{"task_id": "fin11-L1", "split": "train", "domain": "finance-economics", "family": "fin11", "level": 1, "title": "Net exports share of GDP by year"}
+{"task_id": "fin11-L2", "split": "train", "domain": "finance-economics", "family": "fin11", "level": 2, "title": "Net exports share of GDP by year"}
+{"task_id": "fin12-L1", "split": "train", "domain": "finance-economics", "family": "fin12", "level": 1, "title": "Recover missing budget cells"}
+{"task_id": "fin12-L2", "split": "train", "domain": "finance-economics", "family": "fin12", "level": 2, "title": "Recover missing budget cells"}
+{"task_id": "fin4-L1", "split": "train", "domain": "finance-economics", "family": "fin4", "level": 1, "title": "Loan servicing balances"}
+{"task_id": "fin4-L2", "split": "train", "domain": "finance-economics", "family": "fin4", "level": 2, "title": "Loan servicing balances"}
+{"task_id": "ind4-L1", "split": "train", "domain": "industrial-physical-systems", "family": "ind4", "level": 1, "title": "Merit-order dispatch of a generator fleet"}
+{"task_id": "ind4-L2", "split": "train", "domain": "industrial-physical-systems", "family": "ind4", "level": 2, "title": "Merit-order dispatch of a generator fleet"}
+{"task_id": "ind5-L1", "split": "train", "domain": "industrial-physical-systems", "family": "ind5", "level": 1, "title": "Vibration alerts from machine sensors"}
+{"task_id": "ind5-L2", "split": "train", "domain": "industrial-physical-systems", "family": "ind5", "level": 2, "title": "Vibration alerts from machine sensors"}
+{"task_id": "math4-L1", "split": "train", "domain": "mathematics-or-formal-reasoning", "family": "math4", "level": 1, "title": "Project critical path and float"}
+{"task_id": "math4-L2", "split": "train", "domain": "mathematics-or-formal-reasoning", "family": "math4", "level": 2, "title": "Project critical path and float"}
+{"task_id": "math5-L1", "split": "train", "domain": "mathematics-or-formal-reasoning", "family": "math5", "level": 1, "title": "Shortest delivery route with closures"}
+{"task_id": "math5-L2", "split": "train", "domain": "mathematics-or-formal-reasoning", "family": "math5", "level": 2, "title": "Shortest delivery route with closures"}
+{"task_id": "med4-L1", "split": "train", "domain": "media-content-production", "family": "med4", "level": 1, "title": "Subtitle resync from two reference cues"}
+{"task_id": "med4-L2", "split": "train", "domain": "media-content-production", "family": "med4", "level": 2, "title": "Subtitle resync from two reference cues"}
+{"task_id": "med5-L1", "split": "train", "domain": "media-content-production", "family": "med5", "level": 1, "title": "Citation audit of a manuscript"}
+{"task_id": "med5-L2", "split": "train", "domain": "media-content-production", "family": "med5", "level": 2, "title": "Citation audit of a manuscript"}
+{"task_id": "off4-L1", "split": "train", "domain": "office-white-collar", "family": "off4", "level": 1, "title": "Quarterly sales pivot from a workbook"}
+{"task_id": "off4-L2", "split": "train", "domain": "office-white-collar", "family": "off4", "level": 2, "title": "Quarterly sales pivot from a workbook"}
+{"task_id": "off5-L1", "split": "train", "domain": "office-white-collar", "family": "off5", "level": 1, "title": "Two-week payroll from timesheets"}
+{"task_id": "off5-L2", "split": "train", "domain": "office-white-collar", "family": "off5", "level": 2, "title": "Two-week payroll from timesheets"}
+{"task_id": "sci11-L1", "split": "train", "domain": "natural-science", "family": "sci11", "level": 1, "title": "Hanes-Woolf enzyme kinetics"}
+{"task_id": "sci11-L2", "split": "train", "domain": "natural-science", "family": "sci11", "level": 2, "title": "Hanes-Woolf enzyme kinetics"}
+{"task_id": "sci4-L1", "split": "train", "domain": "natural-science", "family": "sci4", "level": 1, "title": "Beer-Lambert calibration and sample concentrations"}
+{"task_id": "sci4-L2", "split": "train", "domain": "natural-science", "family": "sci4", "level": 2, "title": "Beer-Lambert calibration and sample concentrations"}
+{"task_id": "sec4-L1", "split": "train", "domain": "cybersecurity", "family": "sec4", "level": 1, "title": "SSH brute-force sources and logins"}
+{"task_id": "sec4-L2", "split": "train", "domain": "cybersecurity", "family": "sec4", "level": 2, "title": "SSH brute-force sources and logins"}
+{"task_id": "sec5-L1", "split": "train", "domain": "cybersecurity", "family": "sec5", "level": 1, "title": "Off-hours data egress from internal hosts"}
+{"task_id": "sec5-L2", "split": "train", "domain": "cybersecurity", "family": "sec5", "level": 2, "title": "Off-hours data egress from internal hosts"}
+{"task_id": "sw4-L1", "split": "train", "domain": "software-engineering", "family": "sw4", "level": 1, "title": "Endpoint SLO table from an access log"}
+{"task_id": "sw4-L2", "split": "train", "domain": "software-engineering", "family": "sw4", "level": 2, "title": "Endpoint SLO table from an access log"}
+{"task_id": "sw5-L1", "split": "train", "domain": "software-engineering", "family": "sw5", "level": 1, "title": "Dependency vulnerability audit of a lock file"}
+{"task_id": "sw5-L2", "split": "train", "domain": "software-engineering", "family": "sw5", "level": 2, "title": "Dependency vulnerability audit of a lock file"}

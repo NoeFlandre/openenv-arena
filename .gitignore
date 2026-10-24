@@ -14,3 +14,7 @@ site/
 *.token
 *.log
 .DS_Store
+.audit/
+
+# Local verification artifacts
+verification/

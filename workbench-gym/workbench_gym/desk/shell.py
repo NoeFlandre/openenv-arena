@@ -9,13 +9,16 @@ as root, the command drops to ``nobody``, so it can read its own workspace but
 not the server's code, the reference solvers or any answer key (those are only
 in the server's memory). Limits: CPU, memory, file size, open files, process
 count, a 20 s wall clock (as tbench2_env), and the whole process group is killed
-when the command ends.
+when the command ends. A descendant that creates its own session is outside
+that process group; the episode sandbox bounds its lifetime.
 """
 
 import os
 import resource
+import selectors
 import signal
 import subprocess
+import time
 
 WALL_TIMEOUT_S = 20
 CPU_SECONDS = 10
@@ -74,6 +77,7 @@ def run_shell(command: str, workdir: str) -> tuple[int, str]:
         "OPENBLAS_NUM_THREADS": "1",
         "OMP_NUM_THREADS": "1",
     }
+    deadline = time.monotonic() + WALL_TIMEOUT_S
     proc = subprocess.Popen(
         ["/bin/sh", "-c", command],
         cwd=workdir,
@@ -84,16 +88,39 @@ def run_shell(command: str, workdir: str) -> tuple[int, str]:
         preexec_fn=_limits,
         start_new_session=True,
     )
+    assert proc.stdout is not None
+    captured = bytearray()
+    capture_limit = 4 * (MAX_OUTPUT_CHARS + 1)
+    timed_out = False
     try:
-        out, _ = proc.communicate(timeout=WALL_TIMEOUT_S)
-    except subprocess.TimeoutExpired:
-        _kill_group(proc.pid)
-        out, _ = proc.communicate()
-        text = out.decode("utf-8", errors="replace")
-        return 124, cap_output(text + f"\n[command timed out after {WALL_TIMEOUT_S} s]")
+        with selectors.DefaultSelector() as selector:
+            selector.register(proc.stdout, selectors.EVENT_READ)
+            while selector.get_map():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    timed_out = True
+                    break
+                for key, _ in selector.select(remaining):
+                    chunk = os.read(key.fd, 65536)
+                    if not chunk:
+                        selector.unregister(key.fd)
+                    elif len(captured) < capture_limit:
+                        captured.extend(chunk[: capture_limit - len(captured)])
+        if not timed_out:
+            try:
+                proc.wait(timeout=max(0.0, deadline - time.monotonic()))
+            except subprocess.TimeoutExpired:
+                timed_out = True
     finally:
         _kill_group(proc.pid)
-    text = out.decode("utf-8", errors="replace")
+        proc.stdout.close()
+        try:
+            proc.wait(timeout=0.2)
+        except subprocess.TimeoutExpired:
+            pass
+    text = captured.decode("utf-8", errors="replace")
+    if timed_out:
+        return 124, cap_output(text + f"\n[command timed out after {WALL_TIMEOUT_S} s]")
     if proc.returncode == -signal.SIGXCPU:
         text += f"\n[command stopped at the {CPU_SECONDS} s CPU limit]"
     return proc.returncode, cap_output(text)

@@ -259,6 +259,56 @@ def test_checks():
     assert value_ok(Check("text"), " ok ", "ok") and value_ok(Check("bool"), True, True)
 
 
+@pytest.mark.parametrize("sign", (1, -1))
+@pytest.mark.parametrize(
+    ("kind", "want", "container", "reward"),
+    [
+        ("int", 1, "scalar", 0.0),
+        ("num", 1.0, "scalar", 0.0),
+        ("list", [1], "sequence", 0.1),
+        ("map", {"one": 1}, "mapping", 0.1),
+        ("set", [1], "sequence", 0.1),
+    ],
+)
+def test_unrepresentable_numeric_answers_receive_wrong_value_credit(
+    sign, kind, want, container, reward
+):
+    huge = sign * 10**1000
+    if container == "sequence":
+        answer = [huge]
+    elif container == "mapping":
+        answer = {"one": huge}
+    else:
+        answer = huge
+    output = JsonOut(path="answer.json", checks={"value": Check(kind)}, want={"value": want})
+    assert grade_texts([output], {"answer.json": json.dumps({"value": answer})})[0] == reward
+    assert grade_texts([output], {"answer.json": json.dumps({"value": want})})[0] == 1.0
+
+
+def test_unrepresentable_numeric_output_finishes_the_episode(env):
+    env.reset(task_id=SOME_TASK, seed=1)
+    answer = {"balances": [], "total": 10**1000}
+    write_outputs(env, {"output/balances.json": json.dumps(answer)})
+    result = env.step(act("submit"))
+    assert result.done is True and result.reward == 0.0
+
+
+def test_deeply_nested_json_receives_zero_credit():
+    output = JsonOut(path="answer.json", checks={"value": Check("int")}, want={"value": 1})
+    answer = '{"value":' + "[" * 50_000 + "0" + "]" * 50_000 + "}"
+    assert output.grade(answer) == (False, False)
+    assert grade_texts([output], {"answer.json": answer})[0] == 0.0
+    assert output.grade('{"value":1}') == (True, True)
+
+
+def test_deeply_nested_json_output_finishes_the_episode(env):
+    env.reset(task_id=SOME_TASK, seed=1)
+    answer = '{"balances":' + "[" * 10_000 + "0" + "]" * 10_000 + ',"total":0}'
+    write_outputs(env, {"output/balances.json": answer})
+    result = env.step(act("submit"))
+    assert result.done is True and result.reward == 0.0
+
+
 def test_csv_and_text_outputs():
     out = CsvOut(
         path="t.csv",

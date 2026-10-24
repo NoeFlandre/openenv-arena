@@ -1,0 +1,81 @@
+name: Verify public Workbench Gym image
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Public image tag to resolve and replay
+        required: true
+        default: ghcr.io/noeflandre/workbench-gym:v7
+  workflow_call:
+    inputs:
+      image:
+        description: Public image tag to resolve and replay
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      IMAGE: ${{ inputs.image }}
+      DOCKER_CONFIG: /tmp/arena-anonymous-docker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Resolve and pull the public amd64 image anonymously
+        run: |
+          mkdir -p "$DOCKER_CONFIG" evidence
+          printf '{"auths":{}}\n' > "$DOCKER_CONFIG/config.json"
+          docker buildx imagetools inspect --raw "$IMAGE" > evidence/image-index.json
+          digest=$(jq -er '[.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64")][0].digest' evidence/image-index.json)
+          repository="${IMAGE%@*}"
+          repository="${repository%:*}"
+          pinned="$repository@$digest"
+          printf '%s\n' "$pinned" > evidence/image-reference.txt
+          docker buildx imagetools inspect --raw "$pinned" > evidence/image-manifest.json
+          jq -e '(.layers | length) <= 128 and (([.layers[].size] | add) + .config.size) <= 2147483648' evidence/image-manifest.json
+          docker pull --platform linux/amd64 "$pinned"
+          docker image inspect "$pinned" > evidence/image-config.json
+          jq -e '.[0] | .Os == "linux" and .Architecture == "amd64" and (.Config.ExposedPorts | keys) == ["8000/tcp"] and (((.Config.Entrypoint // []) + (.Config.Cmd // [])) | length > 0 and length <= 32 and (join(" ") | length <= 4096))' evidence/image-config.json
+          echo "PINNED_IMAGE=$pinned" >> "$GITHUB_ENV"
+      - name: Start the image with its own command and no injected environment
+        run: |
+          docker run --detach --name arena-replay --cpus 2 --memory 2g --publish 127.0.0.1:8000:8000 "$PINNED_IMAGE"
+          ready=false
+          deadline=$((SECONDS + 120))
+          while (( SECONDS < deadline )); do
+            if curl --fail --silent --connect-timeout 1 --max-time 2 http://127.0.0.1:8000/health > evidence/health.json; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          "$ready"
+          docker exec arena-replay /bin/sh -c 'command -v sha256sum || command -v openssl'
+      - name: Run pinned OpenEnv validation and every task episode
+        run: |
+          set -o pipefail
+          validation_status=0
+          docker exec arena-replay openenv validate --url http://127.0.0.1:8000 | tee evidence/openenv-validation.txt || validation_status=$?
+          replay_status=0
+          docker exec -i arena-replay python - --report /tmp/replay-report.json --schema /tmp/replay-schema.json < workbench-gym/tests/replay_image.py | tee evidence/replay-log.txt || replay_status=$?
+          test "$validation_status" -eq 0
+          test "$replay_status" -eq 0
+      - name: Collect verification results
+        if: always()
+        run: |
+          docker cp arena-replay:/tmp/replay-report.json evidence/replay-report.json || true
+          docker cp arena-replay:/tmp/replay-schema.json evidence/schema.json || true
+          docker logs arena-replay > evidence/server.log 2>&1 || true
+          docker inspect arena-replay > evidence/container-config.json || true
+          docker rm --force arena-replay || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: workbench-image-verification
+          path: evidence/

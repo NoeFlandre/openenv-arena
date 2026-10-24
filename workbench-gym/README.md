@@ -24,8 +24,8 @@ There are 20 calls per episode; after the last one the outputs are graded.
 
 ## Reward
 
-An exact answer earns `1.0`. Otherwise, the mean of the valid-format fraction
-and correct-value fraction gives partial credit, capped at `0.2`. Missing or
+An exact answer earns `1.0`. Otherwise, the reward is `0.1` times the valid-format
+fraction plus `0.1` times the correct-value fraction, capped at `0.2`. Missing or
 unparseable values do not count as valid format; an absent output file or wrong
 CSV header scores `0.0`.
 
@@ -64,10 +64,33 @@ uv run python -m tests.desk_gates fin4 60   # gates for one family
 
 ```sh
 export DOCKER_DEFAULT_PLATFORM=linux/amd64
-docker build -t ghcr.io/noeflandre/workbench-gym:v6 .
+docker build -t ghcr.io/noeflandre/workbench-gym:v7 .
 ```
 
 The Dockerfile reuses the published v5 image by digest for its pinned server
-and agent dependencies, then copies the v6 source and configuration.
+and agent dependencies, then copies the v7 source and configuration.
 
 The image serves the server on port 8000 (`/health`, `/schema`, `/ws`).
+
+## Replay the public image
+
+Run the **Verify public Workbench Gym image** workflow on this branch with
+`ghcr.io/noeflandre/workbench-gym:v7`. It resolves the public amd64 digest,
+pulls it with an empty Docker credential configuration, and starts its own
+command without injected environment variables or volumes. The workflow saves
+the image metadata, live submission schema, OpenEnv validation output, and an
+episode report in the `workbench-image-verification` artifact.
+
+The replay solves all 34 tasks from their fresh workspace files through the
+WebSocket tools. It checks exact answers, missing outputs, malformed outputs,
+wrong values, example actions, and the finish action in separate episodes.
+Each exact-answer replay also checks the shell user, Python libraries, and
+grader-file permissions. This verifies the public image's behavior; it does
+not measure model performance or predict an Arena evaluation score.
+
+To run the episode check in an already running image container named
+`arena-replay`, use the following command from the repository root:
+
+```sh
+docker exec -i arena-replay python - < workbench-gym/tests/replay_image.py
+```
