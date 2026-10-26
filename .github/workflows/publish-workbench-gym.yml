@@ -40,7 +40,7 @@ jobs:
       - name: Build and push for linux/amd64
         uses: docker/build-push-action@v6
         with:
-          context: workbench-gym
+          context: qe-redraw
           platforms: linux/amd64
           push: true
           tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
