@@ -46,6 +46,6 @@ jobs:
           tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.licenses=MIT
           cache-from: type=gha
           cache-to: type=gha,mode=max
